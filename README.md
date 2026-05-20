@@ -6,7 +6,7 @@ A portfolio-grade clinical data operations platform demonstrating CDM workflows,
 
 > All data is synthetic. No API key required. The DQP generator and CRF mapper are fully rule-based and work offline.
 
-**[Live Demo →](https://clintrace360.vercel.app)** *(deploy to Vercel to activate)*
+**[Live Demo → clin-trace360.vercel.app](https://clin-trace360.vercel.app)**
 
 ---
 
