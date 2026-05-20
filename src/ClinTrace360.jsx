@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   ChevronDown,
   ChevronRight,
   ClipboardCheck,
@@ -152,6 +153,22 @@ const modules = [
   { id: "recon", label: "SAE / Lab Recon", icon: GitCompareArrows },
   { id: "dqp", label: "Protocol → DQP", icon: FileText },
   { id: "mapper", label: "CRF → SDTM", icon: MapIcon },
+  { id: "rules", label: "Rule Library", icon: BookOpen },
+];
+
+const RULE_LIBRARY = [
+  { ruleId: "RULE-DM-001", domain: "DM", variable: "AGE", description: "Subject age below adult eligibility threshold", condition: "AGE < 18 years", severity: "Critical", basis: "Protocol eligibility criteria; ICH E6(R2) GCP §4.1" },
+  { ruleId: "RULE-DM-002", domain: "DM", variable: "RFSTDTC", description: "First dose date precedes informed consent date", condition: "RFSTDTC < CONSENTDTC", severity: "Critical", basis: "ICH E6(R2) GCP §4.8 Informed Consent" },
+  { ruleId: "RULE-SV-001", domain: "SV", variable: "VISIT", description: "Missing scheduled visit record", condition: "No SV record for expected VISITNUM", severity: "Critical / Major", basis: "Protocol-defined visit schedule; ICH E9 §5.2 data completeness" },
+  { ruleId: "RULE-SV-002", domain: "SV", variable: "SVSTDTC", description: "Visit date outside protocol-defined window", condition: "|SVSTDTC − expected| > 7 days", severity: "Major", basis: "Protocol visit window; ICH E9(R1) data quality requirements" },
+  { ruleId: "RULE-LB-001", domain: "LB", variable: "LBORRES", description: "Lab result outside central laboratory reference range", condition: "LBORRES < LBORNRLO or > LBORNRHI", severity: "Major", basis: "Central lab reference range (CLRR); sponsor clinical monitoring plan" },
+  { ruleId: "RULE-LB-002", domain: "LB", variable: "ALT (LBORRES)", description: "ALT exceeds 3× ULN — hepatotoxicity signal (Hy's Law precursor)", condition: "ALT > 165 U/L (3 × 55 U/L ULN)", severity: "Critical", basis: "FDA DILI Guidance (2009); Hy's Law: ALT > 3× ULN + bilirubin > 2× ULN" },
+  { ruleId: "RULE-LB-003", domain: "LB", variable: "HGB (LBORRES)", description: "Hemoglobin implausibly low — likely data entry or transfer error", condition: "HGB < 5.0 g/dL", severity: "Critical", basis: "Clinical implausibility threshold; incompatible with outpatient participation; source verification required" },
+  { ruleId: "RULE-AE-001", domain: "AE", variable: "AESTDTC", description: "AE onset date before first dose — medical history or data entry error", condition: "AESTDTC < RFSTDTC", severity: "Major", basis: "AE temporal plausibility; ICH E6(R2) §8.3 source data integrity" },
+  { ruleId: "RULE-AE-002", domain: "AE", variable: "AEENDTC", description: "AE resolution date before onset date — temporal impossibility", condition: "AEENDTC < AESTDTC", severity: "Major", basis: "Temporal data integrity; data entry error requiring source document review" },
+  { ruleId: "RULE-AE-003", domain: "AE", variable: "SITEID", description: "Site with zero AE records — possible underreporting signal", condition: "Count of AE records for SITEID = 0", severity: "Critical", basis: "ICH E2A expedited reporting; WHO pharmacovigilance underreporting detection" },
+  { ruleId: "RULE-EX-001", domain: "EX", variable: "EXDOSE", description: "Placebo-arm subject has non-zero exposure dose", condition: "ARMCD = PLACEBO and EXDOSE > 0", severity: "Critical", basis: "Protocol dosing specification; potential unblinding / randomization integrity issue" },
+  { ruleId: "RULE-EX-002", domain: "EX", variable: "EXDOSE", description: "Drug A dose deviates from protocol-specified 100 mg", condition: "ARMCD = DRUG A and EXDOSE ≠ 100 mg", severity: "Major", basis: "Protocol-defined dose; treatment compliance and exposure consistency monitoring" },
 ];
 
 function seededRandom(seed) {
@@ -250,7 +267,7 @@ function mapCrfField(field, index) {
   if (contains("causality", "relationship")) return high({ domain: "AE", variable: "AEREL", variableLabel: "Causality", controlledTerminology: "Sponsor-defined relationship terms", notes: "Map relationship to study drug to AEREL.", reference: "SDTMIG v3.4, AE" });
   if (contains("action taken")) return high({ domain: "AE", variable: "AEACN", variableLabel: "Action Taken with Study Treatment", controlledTerminology: "CDISC action taken terminology", notes: "Map treatment action for AE.", reference: "SDTMIG v3.4, AE" });
   if (contains("outcome")) return high({ domain: "AE", variable: "AEOUT", variableLabel: "Outcome of Adverse Event", controlledTerminology: "CDISC outcome terminology", notes: "Normalize outcome terms.", reference: "SDTMIG v3.4, AE" });
-  if (contains("sae criteria", "hospitalization", "life-threatening")) return medium({ domain: "AE", variable: "AESLIFE/AESHOSP/AESMIE", variableLabel: "Serious Event Criteria Flags", controlledTerminology: "Y/N", notes: "Split selected SAE criterion into the corresponding seriousness criterion flag.", reference: "SDTMIG v3.4, AE" });
+  if (contains("sae criteria", "hospitalization", "life-threatening")) return medium({ domain: "AE", variable: "AESDTH / AESLIFE / AESHOSP / AESDISAB / AESCONG / AESMIE", variableLabel: "SAE Criterion Flags — 6 Variables", controlledTerminology: "Y/N per criterion flag", notes: "A single 'SAE Criteria Met' CRF field maps to six distinct SDTM AE criterion flags: AESDTH (death), AESLIFE (life-threatening), AESHOSP (hospitalization), AESDISAB (persistent disability), AESCONG (congenital anomaly), AESMIE (other medically important). CDASH IG v2.0 recommends individual checkboxes per criterion for direct 1:1 mapping. Decompose at specification time.", reference: "SDTMIG v3.4, AE §7.2.6; CDASH IG v2.0, AE" });
 
   if (contains("medication name", "generic")) return high({ domain: "CM", variable: "CMTRT", variableLabel: "Reported Name of Drug, Med, or Therapy", controlledTerminology: "Verbatim; coded with WHO Drug/ATC separately", notes: "Map collected medication name to CMTRT.", reference: "SDTMIG v3.4, CM" });
   if (contains("atc")) return medium({ domain: "CM", variable: "CMCLASCD", variableLabel: "Medication Class Code", controlledTerminology: "ATC", notes: "ATC may be represented in coding variables depending on study standards.", reference: "SDTMIG v3.4, CM" });
@@ -264,7 +281,7 @@ function mapCrfField(field, index) {
   if (contains("end date")) return medium({ domain: "CM", variable: "CMENDTC", variableLabel: "End Date/Time of Medication", controlledTerminology: "ISO 8601 date/time", notes: "Ambiguous generic end date; mapped to CM only if source CRF is conmeds.", reference: "SDTMIG v3.4, CM" });
 
   if (contains("lab test name")) return high({ domain: "LB", variable: "LBTEST", variableLabel: "Lab Test or Examination Name", controlledTerminology: "CDISC LB test terminology where applicable", notes: "Map descriptive lab test name to LBTEST.", reference: "SDTMIG v3.4, LB" });
-  if (contains("loinc", "lab test code")) return high({ domain: "LB", variable: "LBLOINC/LBTESTCD", variableLabel: "LOINC Code / Lab Test Short Name", controlledTerminology: "LOINC and CDISC LBTESTCD", notes: "Preserve LOINC separately where collected; map CDISC short code to LBTESTCD.", reference: "SDTMIG v3.4, LB" });
+  if (contains("loinc", "lab test code")) return high({ domain: "LB", variable: "LBTESTCD + LBLOINC", variableLabel: "Lab Test Short Name + LOINC Code", controlledTerminology: "CDISC LBTESTCD; LOINC 2.x", notes: "Map the CDISC standard short name to LBTESTCD (required). LOINC code, when separately collected, maps to LBLOINC — a permissible variable in SDTMIG v3.4 LB. Both variables can coexist on the same LB observation record.", reference: "SDTMIG v3.4, LB; LOINC" });
   if (contains("specimen collection", "collection date")) return high({ domain: "LB", variable: "LBDTC", variableLabel: "Date/Time of Specimen Collection", controlledTerminology: "ISO 8601 date/time", notes: "Map specimen collection datetime to LBDTC.", reference: "SDTMIG v3.4, LB" });
   if (contains("original units")) return high({ domain: "LB", variable: "LBORRESU", variableLabel: "Original Units", controlledTerminology: "CDISC unit terminology", notes: "Map original collected units.", reference: "SDTMIG v3.4, LB" });
   if (contains("standard units")) return high({ domain: "LB", variable: "LBSTRESU", variableLabel: "Standard Units", controlledTerminology: "CDISC unit terminology", notes: "Map standardized analysis units.", reference: "SDTMIG v3.4, LB" });
@@ -1654,6 +1671,69 @@ function RiskChecklistTable({ rows }) {
   );
 }
 
+function RuleLibrary() {
+  const critCount = RULE_LIBRARY.filter((r) => r.severity === "Critical").length;
+  const majCount = RULE_LIBRARY.filter((r) => r.severity === "Major" || r.severity === "Critical / Major").length;
+  const regCount = RULE_LIBRARY.filter((r) => r.basis.includes("ICH") || r.basis.includes("FDA")).length;
+
+  return (
+    <div className="workspace">
+      <ModuleHead
+        eyebrow="Reference"
+        title="Rule Library"
+        sub={`Deterministic edit check rules powering the Data Review engine — ${RULE_LIBRARY.length} rules across DM, SV, LB, AE, EX`}
+      />
+
+      <div className="kpi-grid cols4">
+        <Kpi label="Total Rules" value={RULE_LIBRARY.length} sub="5 SDTM domains" />
+        <Kpi label="Critical" tone="critical" value={critCount} sub="Immediate action" />
+        <Kpi label="Major" tone="warning" value={majCount} sub="Expedited review" />
+        <Kpi label="ICH / FDA Basis" tone="accent" value={regCount} sub="Regulatory-referenced" />
+      </div>
+
+      <Card
+        elevated
+        title="Edit Check Rule Catalog"
+        subtitle="All rules are deterministic and transparent — source logic in generateFindings() in ClinTrace360.jsx"
+        bodyPadding={false}
+      >
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Rule ID</th>
+                <th>Domain</th>
+                <th>Variable</th>
+                <th>Description</th>
+                <th>Condition / Threshold</th>
+                <th>Severity</th>
+                <th>Regulatory Basis</th>
+              </tr>
+            </thead>
+            <tbody>
+              {RULE_LIBRARY.map((rule) => (
+                <tr key={rule.ruleId}>
+                  <td><span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{rule.ruleId}</span></td>
+                  <td><Badge tone="neutral">{rule.domain}</Badge></td>
+                  <td style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{rule.variable}</td>
+                  <td>{rule.description}</td>
+                  <td style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{rule.condition}</td>
+                  <td>
+                    <Badge tone={rule.severity === "Critical" ? "critical" : rule.severity.includes("Major") ? "warning" : "neutral"}>
+                      {rule.severity}
+                    </Badge>
+                  </td>
+                  <td>{rule.basis}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 export default function ClinTrace360() {
   const [activeModule, setActiveModule] = useState("review");
   const data = useMemo(() => generateSyntheticTrialData(), []);
@@ -1666,6 +1746,7 @@ export default function ClinTrace360() {
       {activeModule === "recon" && <ReconciliationModule reconciliation={reconciliation} />}
       {activeModule === "dqp" && <ProtocolDqpModule />}
       {activeModule === "mapper" && <CrfMapperModule />}
+      {activeModule === "rules" && <RuleLibrary />}
     </AppShell>
   );
 }
