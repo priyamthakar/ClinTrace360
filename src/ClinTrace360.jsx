@@ -7,7 +7,7 @@ import {
   FileText,
   GitCompareArrows,
   LayoutDashboard,
-  Map,
+  Map as MapIcon,
 } from "lucide-react";
 import {
   Bar,
@@ -151,7 +151,7 @@ const modules = [
   { id: "review", label: "Data Review", icon: LayoutDashboard },
   { id: "recon", label: "SAE / Lab Recon", icon: GitCompareArrows },
   { id: "dqp", label: "Protocol → DQP", icon: FileText },
-  { id: "mapper", label: "CRF → SDTM", icon: Map },
+  { id: "mapper", label: "CRF → SDTM", icon: MapIcon },
 ];
 
 function seededRandom(seed) {
@@ -1319,7 +1319,7 @@ function CrfMapperModule() {
             <textarea className="code-input" value={inputText} onChange={(e) => setInputText(e.target.value)} spellCheck="false" style={{ minHeight: 260 }} />
             <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>
               <button className="btn primary" onClick={runMapping} disabled={isMapping}>
-                <Map size={14} />{isMapping ? "Mapping…" : "Map to SDTM"}
+                <MapIcon size={14} />{isMapping ? "Mapping…" : "Map to SDTM"}
               </button>
             </div>
           </div>
