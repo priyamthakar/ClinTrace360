@@ -1,15 +1,13 @@
 import {
-  Activity,
-  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
   ClipboardCheck,
   Database,
   Download,
   FileText,
   GitCompareArrows,
   LayoutDashboard,
-  ListChecks,
   Map,
-  ShieldCheck,
 } from "lucide-react";
 import {
   Bar,
@@ -25,7 +23,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 const SITES = ["SITE-101", "SITE-102", "SITE-103", "SITE-104", "SITE-105"];
 const VISITS = [
@@ -150,11 +148,10 @@ Visit schedule: Screening, Baseline, Week 4, Week 8, Week 12, Week 16, and End o
 Safety monitoring includes AE and SAE collection from consent through follow-up. SAEs must be reported within 24 hours. Central laboratory testing includes ALT, AST, bilirubin, creatinine, and hemoglobin.`;
 
 const modules = [
-  { id: "protocol", label: "Protocol to DQP", icon: FileText, phase: "Phase 3" },
-  { id: "mapper", label: "CRF to SDTM Mapper", icon: Map, phase: "Phase 3" },
-  { id: "review", label: "Data Review Dashboard", icon: LayoutDashboard, phase: "Phase 1" },
-  { id: "recon", label: "SAE/Lab Reconciliation", icon: GitCompareArrows, phase: "Phase 2" },
-  { id: "about", label: "Methodology", icon: ShieldCheck, phase: "Always" },
+  { id: "review", label: "Data Review", icon: LayoutDashboard },
+  { id: "recon", label: "SAE / Lab Recon", icon: GitCompareArrows },
+  { id: "dqp", label: "Protocol → DQP", icon: FileText },
+  { id: "mapper", label: "CRF → SDTM", icon: Map },
 ];
 
 function seededRandom(seed) {
@@ -822,310 +819,431 @@ function buildVisitHeatmap(data) {
   });
 }
 
+function findingQueryText(finding) {
+  const templates = {
+    MISSING: `Visit record absent for subject ${finding.USUBJID}. Please confirm whether the visit was completed and enter all assessments, or document a protocol deviation.`,
+    TIMING: `Timing discrepancy for subject ${finding.USUBJID}: ${finding.description} Please verify source documents and correct the affected record.`,
+    RANGE: `Out-of-range lab value for subject ${finding.USUBJID}: ${finding.description} Please verify source data, assess clinical significance, and enter a clinician comment if applicable.`,
+    PROTOCOL: `Protocol deviation for subject ${finding.USUBJID}: ${finding.description} Please review eligibility or site compliance and document the deviation if required.`,
+    CONSISTENCY: `Data inconsistency for subject ${finding.USUBJID}: ${finding.description} Please verify treatment assignment and correct the affected record.`,
+  };
+  return templates[finding.category] ?? `Finding ${finding.findingId}: ${finding.description} Please review and respond.`;
+}
+
+function buildSiteSignals(findings) {
+  const counts = SITES.map((site) => findings.filter((f) => f.SITEID === site).length);
+  const max = Math.max(...counts, 1);
+  return SITES.map((site, i) => {
+    const count = counts[i];
+    const critCount = findings.filter((f) => f.SITEID === site && f.severity === "Critical").length;
+    return { site, count, critCount, pct: Math.round((count / max) * 100), tone: critCount > 0 ? "critical" : count > 5 ? "warning" : "success" };
+  });
+}
+
 function AppShell({ activeModule, setActiveModule, children }) {
-  const active = modules.find((module) => module.id === activeModule);
-  const phaseLabel = activeModule === "review" ? "Phase 1 live" : activeModule === "recon" ? "Phase 2 live" : activeModule === "mapper" || activeModule === "protocol" ? "Phase 3 live" : active?.phase;
+  const active = modules.find((m) => m.id === activeModule);
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
+      <header className="topbar">
+        <div className="topbar-brand">
           <div className="brand-mark">CT</div>
-          <div>
-            <h1>ClinTrace360</h1>
-            <p>Clinical Data Quality Workbench</p>
-          </div>
+          <span>ClinTrace360</span>
         </div>
-        <nav className="nav-list" aria-label="Modules">
-          {modules.map((module) => {
-            const Icon = module.icon;
+        <div className="topbar-status">
+          <span className="dot" />
+          <span>{active?.label ?? "—"}</span>
+        </div>
+        <div className="topbar-meta">Synthetic CDISC · v0.1</div>
+      </header>
+      <nav className="mobile-nav" aria-label="Module navigation">
+        {modules.map((m) => {
+          const Icon = m.icon;
+          return (
+            <button key={m.id} className={`mobile-nav-item${activeModule === m.id ? " active" : ""}`} onClick={() => setActiveModule(m.id)}>
+              <Icon size={14} />
+              <span>{m.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+      <aside className="sidebar">
+        <div className="nav-section-label">Modules</div>
+        <nav aria-label="Modules" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {modules.map((m) => {
+            const Icon = m.icon;
             return (
-              <button className={activeModule === module.id ? "nav-item active" : "nav-item"} key={module.id} onClick={() => setActiveModule(module.id)}>
-                <Icon size={18} />
-                <span>{module.label}</span>
-                <small>{module.phase}</small>
+              <button key={m.id} className={`nav-item${activeModule === m.id ? " active" : ""}`} onClick={() => setActiveModule(m.id)}>
+                <Icon size={15} />
+                <span className="nav-item-label">{m.label}</span>
               </button>
             );
           })}
         </nav>
-        <div className="sidebar-footer">
-          <Database size={16} />
-          <span>Synthetic CDISC-style data only</span>
+        <div className="sidebar-footer" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Database size={12} />
+          <span>Synthetic data only</span>
         </div>
       </aside>
-      <main className="main">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">v0.1 foundation build</p>
-            <h2>{active?.label}</h2>
-          </div>
-          <div className="status-pill">
-            <Activity size={16} />
-            {phaseLabel}
-          </div>
-        </header>
-        {children}
-      </main>
+      <main>{children}</main>
     </div>
   );
 }
 
-function KpiCard({ label, value, detail, tone = "neutral", icon: Icon }) {
+function Kpi({ label, value, sub, tone = "" }) {
   return (
-    <section className={`kpi-card ${tone}`}>
-      <div className="kpi-icon">{Icon ? <Icon size={20} /> : null}</div>
-      <div>
-        <p>{label}</p>
-        <strong>{value}</strong>
-        <span>{detail}</span>
-      </div>
-    </section>
+    <div className={`kpi${tone ? ` ${tone}` : ""}`}>
+      <div className="kpi-label">{label}</div>
+      <div className="kpi-value">{value}</div>
+      {sub && <div className="kpi-sub">{sub}</div>}
+    </div>
   );
 }
 
-function Panel({ title, subtitle, action, children }) {
+function Card({ title, subtitle, action, children, elevated, bodyPadding = true }) {
   return (
-    <section className="panel">
-      <div className="panel-header">
-        <div>
-          <h3>{title}</h3>
-          {subtitle ? <p>{subtitle}</p> : null}
+    <div className={`card${elevated ? " elevated" : ""}`}>
+      {(title || action) && (
+        <div className="card-head">
+          <div>
+            {title && <h3>{title}</h3>}
+            {subtitle && <p>{subtitle}</p>}
+          </div>
+          {action && <div className="card-head-actions">{action}</div>}
         </div>
-        {action}
+      )}
+      <div className="card-body" style={bodyPadding ? undefined : { padding: 0 }}>{children}</div>
+    </div>
+  );
+}
+
+function Badge({ tone = "neutral", children }) {
+  return <span className={`badge ${tone}`}>{children}</span>;
+}
+
+function ModuleHead({ eyebrow, title, sub, children }) {
+  return (
+    <div className="module-head">
+      <div className="module-title">
+        {eyebrow && <div className="module-eyebrow">{eyebrow}</div>}
+        <div className="module-h">{title}</div>
+        {sub && <div className="module-sub">{sub}</div>}
       </div>
-      {children}
-    </section>
+      {children && <div className="module-actions">{children}</div>}
+    </div>
   );
 }
 
 function DataReviewDashboard({ data, findings }) {
+  const [tab, setTab] = useState("findings");
   const [analyte, setAnalyte] = useState("ALT");
   const [site, setSite] = useState("All sites");
   const [severityFilter, setSeverityFilter] = useState("All");
+  const [expandedId, setExpandedId] = useState(null);
+
   const siteSummary = useMemo(() => buildSiteSummary(findings), [findings]);
   const heatmap = useMemo(() => buildVisitHeatmap(data), [data]);
+  const siteSignals = useMemo(() => buildSiteSignals(findings), [findings]);
+
   const expectedVisits = data.dm.length * VISITS.length;
-  const missingVisits = findings.filter((row) => row.category === "MISSING").length;
-  const criticalFindings = findings.filter((row) => row.severity === "Critical").length;
+  const missingVisits = findings.filter((f) => f.category === "MISSING").length;
+  const criticalFindings = findings.filter((f) => f.severity === "Critical").length;
   const filteredLabRows = data.lb
-    .filter((row) => row.LBTESTCD === analyte && (site === "All sites" || row.SITEID === site))
-    .map((row) => ({ ...row, flagged: row.LBORRES < row.LBORNRLO || row.LBORRES > row.LBORNRHI }));
-  const timingRows = findings.filter((row) => row.domain === "AE" && row.category === "TIMING");
-  const aeBySite = SITES.map((siteId) => ({ site: siteId, count: data.ae.filter((row) => row.SITEID === siteId).length }));
-  const visibleFindings = severityFilter === "All" ? findings : findings.filter((row) => row.severity === severityFilter);
+    .filter((r) => r.LBTESTCD === analyte && (site === "All sites" || r.SITEID === site))
+    .map((r) => ({ ...r, flagged: r.LBORRES < r.LBORNRLO || r.LBORRES > r.LBORNRHI }));
+  const timingRows = findings.filter((f) => f.domain === "AE" && f.category === "TIMING");
+  const visibleFindings = severityFilter === "All" ? findings : findings.filter((f) => f.severity === severityFilter);
+
+  const toggleRow = (id) => setExpandedId((prev) => (prev === id ? null : id));
 
   return (
     <div className="workspace">
+      <ModuleHead eyebrow="Phase 1 · Live" title="Data Review Dashboard" sub="Rule-based findings across DM, SV, LB, AE, EX domains — 40 subjects, 5 sites">
+        <button className="btn" onClick={() => downloadCsv("clintrace360_findings.csv", visibleFindings)}>
+          <Download size={14} />Export CSV
+        </button>
+      </ModuleHead>
+
       <div className="kpi-grid">
-        <KpiCard label="Total Subjects" value={data.dm.length} detail="5 sites, 2 arms" icon={Database} />
-        <KpiCard label="Expected Visits" value={expectedVisits} detail={`${data.sv.length} captured`} icon={ClipboardCheck} />
-        <KpiCard label="Missing Visits" value={missingVisits} detail={`${Math.round((missingVisits / expectedVisits) * 100)}% gap rate`} tone="warn" icon={AlertTriangle} />
-        <KpiCard label="Open Queries" value={findings.length} detail="Generated from rule checks" tone="accent" icon={ListChecks} />
-        <KpiCard label="Critical Findings" value={criticalFindings} detail="Needs immediate review" tone="danger" icon={ShieldCheck} />
+        <Kpi label="Total Subjects" value={data.dm.length} sub="5 sites · 2 arms" />
+        <Kpi label="Expected Visits" value={expectedVisits} sub={`${data.sv.length} captured`} />
+        <Kpi label="Missing Visits" tone="warning" value={missingVisits} sub={`${Math.round((missingVisits / expectedVisits) * 100)}% gap rate`} />
+        <Kpi label="Open Queries" tone="accent" value={findings.length} sub="From rule checks" />
+        <Kpi label="Critical Findings" tone="critical" value={criticalFindings} sub="Immediate review" />
       </div>
 
-      <div className="two-column">
-        <Panel title="Site-Level Finding Overview" subtitle="Stacked by transparent CDM review rule category">
-          <div className="chart-box">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={siteSummary}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="site" />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Missing" stackId="a" fill="#f59e0b" />
-                <Bar dataKey="Range" stackId="a" fill="#ef4444" />
-                <Bar dataKey="Timing" stackId="a" fill="#8b5cf6" />
-                <Bar dataKey="Protocol" stackId="a" fill="#0ea5e9" />
-                <Bar dataKey="Consistency" stackId="a" fill="#14b8a6" />
-              </BarChart>
-            </ResponsiveContainer>
+      <div className="card elevated">
+        <div className="card-head">
+          <div>
+            <h3>Findings &amp; Site Analysis</h3>
+            <p>Finding log, site anomaly signals, and lab trajectory</p>
           </div>
-        </Panel>
-
-        <Panel
-          title="Lab Trajectory Review"
-          subtitle="Individual subject trajectories with normal range overlay"
-          action={
-            <div className="control-row">
-              <select value={analyte} onChange={(event) => setAnalyte(event.target.value)} aria-label="Analyte">
-                {Object.keys(ANALYTES).map((code) => (
-                  <option key={code}>{code}</option>
-                ))}
+          <div className="card-head-actions">
+            {tab === "findings" && (
+              <select value={severityFilter} onChange={(e) => setSeverityFilter(e.target.value)} aria-label="Severity">
+                <option>All</option><option>Critical</option><option>Major</option>
               </select>
-              <select value={site} onChange={(event) => setSite(event.target.value)} aria-label="Site">
-                <option>All sites</option>
-                {SITES.map((siteId) => (
-                  <option key={siteId}>{siteId}</option>
-                ))}
-              </select>
-            </div>
-          }
-        >
-          <div className="chart-box">
-            <ResponsiveContainer width="100%" height={300}>
-              <ScatterChart>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="VISITNUM" name="Visit" type="number" domain={[1, 7]} ticks={VISITS.map((visit) => visit.num)} />
-                <YAxis dataKey="LBORRES" name={analyte} unit={` ${ANALYTES[analyte].unit}`} />
-                <Tooltip cursor={{ strokeDasharray: "3 3" }} formatter={(value) => [`${value} ${ANALYTES[analyte].unit}`, analyte]} labelFormatter={(value) => `Visit ${value}`} />
-                <ReferenceArea y1={ANALYTES[analyte].low} y2={ANALYTES[analyte].high} fill="#d1fae5" fillOpacity={0.45} />
-                <Scatter data={filteredLabRows} name={analyte}>
-                  {filteredLabRows.map((row) => (
-                    <Cell key={`${row.USUBJID}-${row.VISITNUM}-${row.LBTESTCD}`} fill={row.flagged ? "#dc2626" : row.SITEID === "SITE-103" ? "#0ea5e9" : "#64748b"} />
-                  ))}
-                </Scatter>
-              </ScatterChart>
-            </ResponsiveContainer>
+            )}
+            {tab === "lab" && (
+              <>
+                <select value={analyte} onChange={(e) => setAnalyte(e.target.value)} aria-label="Analyte">
+                  {Object.keys(ANALYTES).map((c) => <option key={c}>{c}</option>)}
+                </select>
+                <select value={site} onChange={(e) => setSite(e.target.value)} aria-label="Site">
+                  <option>All sites</option>
+                  {SITES.map((s) => <option key={s}>{s}</option>)}
+                </select>
+              </>
+            )}
           </div>
-        </Panel>
-      </div>
-
-      <div className="two-column">
-        <Panel title="AE Analysis" subtitle="SITE-104 intentionally shows zero AE records as an underreporting signal">
-          <div className="chart-box compact-chart">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={aeBySite} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" allowDecimals={false} />
-                <YAxis type="category" dataKey="site" width={80} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#0ea5e9" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mini-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Subject</th>
-                  <th>Issue</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {timingRows.map((row) => (
-                  <tr key={row.findingId}>
-                    <td>{row.USUBJID}</td>
-                    <td>{row.description}</td>
-                    <td><span className="badge danger">{row.severity}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
-
-        <Panel title="Visit Compliance Heatmap" subtitle="Percent completion by site and planned visit">
-          <div className="heatmap">
-            <div className="heatmap-row header">
-              <span>Site</span>
-              {VISITS.map((visit) => (
-                <span key={visit.num}>{visit.name}</span>
-              ))}
-            </div>
-            {heatmap.map((siteRow) => (
-              <div className="heatmap-row" key={siteRow.site}>
-                <strong>{siteRow.site}</strong>
-                {siteRow.visits.map((visit) => (
-                  <span className={`heat-cell ${visit.pct >= 90 ? "good" : visit.pct >= 70 ? "medium" : "bad"}`} key={visit.visit}>
-                    {visit.pct}%
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </div>
-
-      <Panel
-        title="Data Findings Log"
-        subtitle="Audit-ready finding list generated from explicit rules, ready for query management"
-        action={
-          <div className="control-row">
-            <select value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value)} aria-label="Severity filter">
-              <option>All</option>
-              <option>Critical</option>
-              <option>Major</option>
-            </select>
-            <button className="icon-button" onClick={() => downloadCsv("clintrace360_findings.csv", visibleFindings)} title="Export visible findings">
-              <Download size={17} />
-              Export CSV
-            </button>
-          </div>
-        }
-      >
-        <div className="findings-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Finding ID</th>
-                <th>Category</th>
-                <th>Subject</th>
-                <th>Site</th>
-                <th>Domain</th>
-                <th>Variable</th>
-                <th>Description</th>
-                <th>Severity</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleFindings.map((row) => (
-                <tr key={row.findingId}>
-                  <td>{row.findingId}</td>
-                  <td>{row.category}</td>
-                  <td>{row.USUBJID}</td>
-                  <td>{row.SITEID}</td>
-                  <td>{row.domain}</td>
-                  <td>{row.variable}</td>
-                  <td>{row.description}</td>
-                  <td><span className={`badge ${row.severity === "Critical" ? "danger" : "warn"}`}>{row.severity}</span></td>
-                  <td>{row.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
-      </Panel>
+        <div style={{ borderBottom: "1px solid var(--border)", padding: "0 18px" }}>
+          <div className="tab-row" style={{ borderBottom: "none" }}>
+            <button className={`tab${tab === "findings" ? " active" : ""}`} onClick={() => setTab("findings")}>Findings</button>
+            <button className={`tab${tab === "sites" ? " active" : ""}`} onClick={() => setTab("sites")}>Site Signals</button>
+            <button className={`tab${tab === "lab" ? " active" : ""}`} onClick={() => setTab("lab")}>Lab Trend</button>
+          </div>
+        </div>
+        <div>
+          {tab === "findings" && (
+            <div className="table-wrap max-h-520">
+              <table>
+                <thead>
+                  <tr>
+                    <th style={{ width: 28 }} />
+                    <th>ID</th><th>Cat.</th><th>Subject</th><th>Site</th>
+                    <th>Domain</th><th>Variable</th><th>Description</th>
+                    <th>Severity</th><th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleFindings.map((row) => (
+                    <Fragment key={row.findingId}>
+                      <tr className={expandedId === row.findingId ? "expanded" : ""} onClick={() => toggleRow(row.findingId)} style={{ cursor: "pointer" }}>
+                        <td style={{ color: "var(--muted-2)", textAlign: "center" }}>
+                          {expandedId === row.findingId ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                        </td>
+                        <td>{row.findingId}</td>
+                        <td>{row.category}</td>
+                        <td>{row.USUBJID}</td>
+                        <td>{row.SITEID}</td>
+                        <td>{row.domain}</td>
+                        <td>{row.variable}</td>
+                        <td>{row.description}</td>
+                        <td><Badge tone={row.severity === "Critical" ? "critical" : "warning"}>{row.severity}</Badge></td>
+                        <td>{row.status}</td>
+                      </tr>
+                      {expandedId === row.findingId && (
+                        <tr className="detail-row">
+                          <td colSpan={10}>
+                            <div className="detail-grid">
+                              <div className="detail-box">
+                                <h5>Evidence</h5>
+                                <p>{row.domain}.{row.variable} — {row.description}</p>
+                              </div>
+                              <div className="detail-box">
+                                <h5>Query Text</h5>
+                                <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.74rem", color: "var(--muted)" }}>{findingQueryText(row)}</p>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {tab === "sites" && (
+            <div style={{ padding: "18px" }}>
+              <div className="two-col">
+                <div>
+                  <div style={{ marginBottom: 10, fontSize: "0.72rem", fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Finding Distribution by Site</div>
+                  <div className="chart-wrap tall">
+                    <ResponsiveContainer width="100%" height={280}>
+                      <BarChart data={siteSummary}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                        <XAxis dataKey="site" tick={{ fill: "var(--muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fill: "var(--muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <Tooltip contentStyle={{ background: "var(--surface-2)", border: "1px solid var(--border-strong)", borderRadius: 6, fontFamily: "var(--font-mono)", fontSize: 12 }} />
+                        <Legend wrapperStyle={{ fontSize: 12 }} />
+                        <Bar dataKey="Missing" stackId="a" fill="#F76B15" />
+                        <Bar dataKey="Range" stackId="a" fill="#E5484D" />
+                        <Bar dataKey="Timing" stackId="a" fill="#8B5CF6" />
+                        <Bar dataKey="Protocol" stackId="a" fill="#0EA5E9" />
+                        <Bar dataKey="Consistency" stackId="a" fill="#30A46C" radius={[3, 3, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ marginBottom: 10, fontSize: "0.72rem", fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Anomaly Load</div>
+                  <div className="mini-list" style={{ marginBottom: 24 }}>
+                    {siteSignals.map((s) => (
+                      <div className="mini-item" key={s.site}>
+                        <span className="site-id">{s.site}</span>
+                        <div className="bar-track"><div className={`bar-fill ${s.tone}`} style={{ width: `${s.pct}%` }} /></div>
+                        <span className="pct">{s.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginBottom: 10, fontSize: "0.72rem", fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Visit Compliance</div>
+                  <div className="heatmap">
+                    <div className="heatmap-row header">
+                      <span>Site</span>
+                      {VISITS.map((v) => <span key={v.num}>{v.name}</span>)}
+                    </div>
+                    {heatmap.map((siteRow) => (
+                      <div className="heatmap-row" key={siteRow.site}>
+                        <strong style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--fg)" }}>{siteRow.site}</strong>
+                        {siteRow.visits.map((v) => (
+                          <span className={`heat-cell ${v.pct >= 90 ? "good" : v.pct >= 70 ? "medium" : "bad"}`} key={v.visit}>{v.pct}%</span>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {tab === "lab" && (
+            <div style={{ padding: "18px" }}>
+              <div className="two-col">
+                <div>
+                  <div style={{ marginBottom: 10, fontSize: "0.72rem", fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{analyte} — {ANALYTES[analyte].name}</div>
+                  <div className="chart-wrap tall">
+                    <ResponsiveContainer width="100%" height={280}>
+                      <ScatterChart>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="VISITNUM" name="Visit" type="number" domain={[1, 7]} ticks={VISITS.map((v) => v.num)} tick={{ fill: "var(--muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <YAxis dataKey="LBORRES" name={analyte} unit={` ${ANALYTES[analyte].unit}`} tick={{ fill: "var(--muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <Tooltip cursor={{ strokeDasharray: "3 3" }} formatter={(v) => [`${v} ${ANALYTES[analyte].unit}`, analyte]} labelFormatter={(v) => `Visit ${v}`} contentStyle={{ background: "var(--surface-2)", border: "1px solid var(--border-strong)", borderRadius: 6, fontFamily: "var(--font-mono)", fontSize: 12 }} />
+                        <ReferenceArea y1={ANALYTES[analyte].low} y2={ANALYTES[analyte].high} fill="#30A46C" fillOpacity={0.1} />
+                        <Scatter data={filteredLabRows} name={analyte}>
+                          {filteredLabRows.map((r) => (
+                            <Cell key={`${r.USUBJID}-${r.VISITNUM}-${r.LBTESTCD}`} fill={r.flagged ? "#E5484D" : r.SITEID === "SITE-103" ? "#0EA5E9" : "#5E6AD2"} />
+                          ))}
+                        </Scatter>
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ marginBottom: 10, fontSize: "0.72rem", fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>AE Timing Issues</div>
+                  <div className="table-wrap max-h-400">
+                    <table>
+                      <thead><tr><th>Subject</th><th>Issue</th><th>Sev.</th></tr></thead>
+                      <tbody>
+                        {timingRows.map((r) => (
+                          <tr key={r.findingId}>
+                            <td>{r.USUBJID}</td><td>{r.description}</td>
+                            <td><Badge tone="warning">{r.severity}</Badge></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
 function ReconciliationModule({ reconciliation }) {
   const [activeTab, setActiveTab] = useState("sae");
+  const [selectedId, setSelectedId] = useState(null);
   const { saeFindings, labFindings, queries } = reconciliation;
-  const criticalQueries = queries.filter((row) => row.severity === "Critical").length;
-  const activeRows = activeTab === "sae" ? saeFindings : activeTab === "lab" ? labFindings : queries;
+  const criticalQueries = queries.filter((r) => r.severity === "Critical").length;
+
+  const queueRows = activeTab === "sae" ? saeFindings : activeTab === "lab" ? labFindings : [];
+  const exportRows = activeTab === "sae" ? saeFindings : activeTab === "lab" ? labFindings : queries;
+  const selectedRow = queueRows.find((r) => (r.findingId ?? r.queryId) === selectedId);
+  const handleSelect = (row) => { const id = row.findingId ?? row.queryId; setSelectedId((p) => (p === id ? null : id)); };
+  const auditEntries = queries.map((q) => ({ ts: q.generatedAt, msg: `${q.mismatchType} raised for ${q.USUBJID} — ${q.description}` }));
 
   return (
     <div className="workspace">
-      <div className="kpi-grid recon-kpis">
-        <KpiCard label="SAE Findings" value={saeFindings.length} detail="EDC AE vs safety DB" tone="danger" icon={GitCompareArrows} />
-        <KpiCard label="Lab Findings" value={labFindings.length} detail="EDC LB vs local labs" tone="warn" icon={Database} />
-        <KpiCard label="Open Queries" value={queries.length} detail="Timestamped and traceable" tone="accent" icon={ListChecks} />
-        <KpiCard label="Critical Queries" value={criticalQueries} detail="Regulatory or safety priority" tone="danger" icon={AlertTriangle} />
+      <ModuleHead eyebrow="Phase 2 · Live" title="SAE / Lab Reconciliation" sub="Synthetic safety database and local lab feed matched against EDC domains">
+        <button className="btn" onClick={() => downloadCsv(`clintrace360_${activeTab}_recon.csv`, exportRows)}>
+          <Download size={14} />Export CSV
+        </button>
+      </ModuleHead>
+
+      <div className="kpi-grid cols4">
+        <Kpi label="SAE Findings" tone="critical" value={saeFindings.length} sub="EDC AE vs safety DB" />
+        <Kpi label="Lab Findings" tone="warning" value={labFindings.length} sub="EDC LB vs local labs" />
+        <Kpi label="Open Queries" tone="accent" value={queries.length} sub="Timestamped, traceable" />
+        <Kpi label="Critical Queries" tone="critical" value={criticalQueries} sub="Regulatory / safety priority" />
       </div>
 
-      <Panel
-        title="SAE and Local Lab Reconciliation"
-        subtitle="Synthetic external data is matched against EDC domains with audit-ready query text."
-        action={
-          <div className="control-row">
-            <button className={activeTab === "sae" ? "tab-button active" : "tab-button"} onClick={() => setActiveTab("sae")}>SAE Reconciliation</button>
-            <button className={activeTab === "lab" ? "tab-button active" : "tab-button"} onClick={() => setActiveTab("lab")}>Local Lab</button>
-            <button className={activeTab === "queries" ? "tab-button active" : "tab-button"} onClick={() => setActiveTab("queries")}>Query Log</button>
-            <button className="icon-button" onClick={() => downloadCsv(`clintrace360_${activeTab}_reconciliation.csv`, activeRows)} title="Export active reconciliation tab">
-              <Download size={17} />
-              Export CSV
-            </button>
+      <div className="recon-layout">
+        <div className="card elevated">
+          <div className="card-head">
+            <div><h3>Mismatch Queue</h3><p>Click a row to inspect detail and query text</p></div>
+            <div className="card-head-actions">
+              <div className="tab-row" style={{ borderBottom: "none", gap: 2 }}>
+                <button className={`tab${activeTab === "sae" ? " active" : ""}`} onClick={() => { setActiveTab("sae"); setSelectedId(null); }}>SAE</button>
+                <button className={`tab${activeTab === "lab" ? " active" : ""}`} onClick={() => { setActiveTab("lab"); setSelectedId(null); }}>Local Lab</button>
+                <button className={`tab${activeTab === "audit" ? " active" : ""}`} onClick={() => { setActiveTab("audit"); setSelectedId(null); }}>Audit Log</button>
+              </div>
+            </div>
           </div>
-        }
-      >
-        {activeTab === "sae" && <SaeReconciliationTable rows={saeFindings} />}
-        {activeTab === "lab" && <LabReconciliationTable rows={labFindings} />}
-        {activeTab === "queries" && <QueryLogTable rows={queries} />}
-      </Panel>
+          <div className="card-body" style={{ padding: "12px" }}>
+            {activeTab !== "audit" && (
+              <div className="recon-queue">
+                {queueRows.map((row) => {
+                  const id = row.findingId ?? row.queryId;
+                  return (
+                    <div key={id} className={`recon-row${selectedId === id ? " active" : ""}`} onClick={() => handleSelect(row)}>
+                      <div>
+                        <div className="recon-row-title">{row.USUBJID} — {row.mismatchType}</div>
+                        <div className="recon-row-sub">{row.SAETERM ?? row.LBTESTCD ?? "—"} · {row.SAESTDTC ?? row.LBDT ?? "—"}</div>
+                      </div>
+                      <Badge tone={row.severity === "Critical" ? "critical" : "warning"}>{row.severity}</Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {activeTab === "audit" && (
+              <div style={{ maxHeight: 420, overflowY: "auto" }}>
+                {auditEntries.map((e, i) => (
+                  <div key={i} className="audit-entry">
+                    <div className="audit-ts">{e.ts}</div>
+                    <div className="audit-msg">{e.msg}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="card elevated" style={{ position: "sticky", top: "calc(var(--topbar-h) + 24px)", alignSelf: "start" }}>
+          <div className="card-head"><div><h3>Detail</h3><p>Select a row to inspect</p></div></div>
+          <div className="card-body">
+            {!selectedRow ? (
+              <div className="empty-state"><GitCompareArrows size={24} /><span>Select a mismatch to view detail</span></div>
+            ) : (
+              <div style={{ display: "grid", gap: 10 }}>
+                <div className="detail-box"><h5>Subject</h5><p>{selectedRow.USUBJID}</p></div>
+                <div className="detail-box"><h5>Mismatch Type</h5><p>{selectedRow.mismatchType}</p></div>
+                <div className="detail-box"><h5>Severity</h5><p><Badge tone={selectedRow.severity === "Critical" ? "critical" : "warning"}>{selectedRow.severity}</Badge></p></div>
+                {selectedRow.edcValue !== undefined && <div className="detail-box"><h5>EDC Value</h5><p>{selectedRow.edcValue}</p></div>}
+                {selectedRow.safetyValue !== undefined && <div className="detail-box"><h5>Safety DB Value</h5><p>{selectedRow.safetyValue}</p></div>}
+                {selectedRow.localValue !== undefined && <div className="detail-box"><h5>Local Lab Value</h5><p>{selectedRow.localValue}</p></div>}
+                <div className="detail-box">
+                  <h5>Query Text</h5>
+                  <div className="code-block">{queries.find((q) => q.queryId === selectedRow.queryId)?.queryText ?? "—"}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1134,29 +1252,34 @@ function CrfMapperModule() {
   const [selectedTemplate, setSelectedTemplate] = useState("demographics");
   const [inputText, setInputText] = useState(formatCrfFields(CRF_TEMPLATES.demographics.fields));
   const [mappings, setMappings] = useState(() => CRF_TEMPLATES.demographics.fields.map(mapCrfField));
+  const [isMapping, setIsMapping] = useState(false);
   const [history, setHistory] = useState(() => readStorage("clintrace360:mappingHistory", []));
-  const highConfidence = mappings.filter((row) => row.confidence === "High").length;
-  const reviewNeeded = mappings.filter((row) => row.confidence !== "High").length;
+  const highConfidence = mappings.filter((r) => r.confidence === "High").length;
+  const reviewNeeded = mappings.filter((r) => r.confidence !== "High").length;
 
-  const loadTemplate = (templateKey) => {
-    setSelectedTemplate(templateKey);
-    const text = formatCrfFields(CRF_TEMPLATES[templateKey].fields);
+  const loadTemplate = (key) => {
+    setSelectedTemplate(key);
+    const text = formatCrfFields(CRF_TEMPLATES[key].fields);
     setInputText(text);
-    setMappings(CRF_TEMPLATES[templateKey].fields.map(mapCrfField));
+    setMappings(CRF_TEMPLATES[key].fields.map(mapCrfField));
   };
 
   const runMapping = () => {
-    setSelectedTemplate("custom");
-    const nextMappings = parseCrfInput(inputText).map(mapCrfField);
-    setMappings(nextMappings);
-    setHistory(saveHistoryItem("clintrace360:mappingHistory", {
-      id: `MAPH-${Date.now()}`,
-      generatedAt: new Date().toLocaleString(),
-      fieldCount: nextMappings.length,
-      highConfidence: nextMappings.filter((row) => row.confidence === "High").length,
-      inputText,
-      mappings: nextMappings,
-    }));
+    setIsMapping(true);
+    setTimeout(() => {
+      setSelectedTemplate("custom");
+      const next = parseCrfInput(inputText).map(mapCrfField);
+      setMappings(next);
+      setHistory(saveHistoryItem("clintrace360:mappingHistory", {
+        id: `MAPH-${Date.now()}`,
+        generatedAt: new Date().toLocaleString(),
+        fieldCount: next.length,
+        highConfidence: next.filter((r) => r.confidence === "High").length,
+        inputText,
+        mappings: next,
+      }));
+      setIsMapping(false);
+    }, 420);
   };
 
   const restoreMapping = (item) => {
@@ -1167,102 +1290,100 @@ function CrfMapperModule() {
 
   return (
     <div className="workspace">
-      <div className="kpi-grid mapper-kpis">
-        <KpiCard label="CRF Fields" value={mappings.length} detail="Current mapping set" icon={Map} />
-        <KpiCard label="High Confidence" value={highConfidence} detail="Direct SDTM matches" tone="accent" icon={ShieldCheck} />
-        <KpiCard label="Needs Review" value={reviewNeeded} detail="Medium or low confidence" tone={reviewNeeded ? "warn" : "accent"} icon={AlertTriangle} />
+      <ModuleHead eyebrow="Phase 3 · Live" title="CRF → SDTM Mapper" sub="Deterministic rule-based field-level mapping to CDISC SDTM domains">
+        <button className="btn" onClick={() => downloadCsv("clintrace360_sdtm_mapping.csv", mappings)}>
+          <Download size={14} />Export CSV
+        </button>
+      </ModuleHead>
+
+      <div className="kpi-grid cols3">
+        <Kpi label="CRF Fields" value={mappings.length} sub="Current mapping set" />
+        <Kpi label="High Confidence" tone="success" value={highConfidence} sub="Direct SDTM matches" />
+        <Kpi label="Needs Review" tone={reviewNeeded ? "warning" : "success"} value={reviewNeeded} sub="Medium or low confidence" />
       </div>
 
-      <div className="mapper-layout">
-        <Panel
-          title="CRF Field Input"
-          subtitle="Paste one field per line as Label | Data Type | Codelist."
-          action={
-            <select value={selectedTemplate} onChange={(event) => loadTemplate(event.target.value)} aria-label="CRF template">
-              {Object.entries(CRF_TEMPLATES).map(([key, template]) => (
-                <option value={key} key={key}>{template.label}</option>
-              ))}
-              <option value="custom">Custom input</option>
-            </select>
-          }
-        >
-          <textarea className="crf-input" value={inputText} onChange={(event) => setInputText(event.target.value)} spellCheck="false" />
-          <div className="mapper-actions">
-            <button className="icon-button" onClick={runMapping}>
-              <Map size={17} />
-              Map to SDTM
-            </button>
-            <button className="icon-button" onClick={() => downloadCsv("clintrace360_sdtm_mapping.csv", mappings)}>
-              <Download size={17} />
-              Export CSV
-            </button>
+      <div className="form-grid">
+        <div className="card elevated">
+          <div className="card-head">
+            <div><h3>CRF Field Input</h3><p>One field per line — Label | Data Type | Codelist</p></div>
+            <div className="card-head-actions">
+              <select value={selectedTemplate} onChange={(e) => { if (e.target.value !== "custom") loadTemplate(e.target.value); }} aria-label="Template">
+                {Object.entries(CRF_TEMPLATES).map(([key, tpl]) => (
+                  <option value={key} key={key}>{tpl.label}</option>
+                ))}
+                <option value="custom">Custom input</option>
+              </select>
+            </div>
           </div>
-        </Panel>
+          <div className="card-body">
+            <textarea className="code-input" value={inputText} onChange={(e) => setInputText(e.target.value)} spellCheck="false" style={{ minHeight: 260 }} />
+            <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>
+              <button className="btn primary" onClick={runMapping} disabled={isMapping}>
+                <Map size={14} />{isMapping ? "Mapping…" : "Map to SDTM"}
+              </button>
+            </div>
+          </div>
+        </div>
 
-        <Panel title="Mapping Notes" subtitle="This local build uses deterministic CDISC-oriented rules. LLM assistance can be added later for ambiguous sponsor-specific fields.">
-          <div className="note-list">
-            <section>
-              <strong>Confidence</strong>
-              <p>High means a direct SDTM target was found. Medium means the field is plausible but context-dependent. Low means sponsor review is needed.</p>
-            </section>
-            <section>
-              <strong>Human review</strong>
-              <p>Mappings are starting points for portfolio demonstration and must be checked against the current CDISC IG and study standards.</p>
-            </section>
+        <div className="card">
+          <div className="card-head"><div><h3>Mapping Notes</h3><p>Confidence levels and review guidance</p></div></div>
+          <div className="card-body">
+            <div className="signal-list">
+              <div className="signal-item"><div><strong>Confidence levels</strong><span>High = direct SDTM target found. Medium = plausible but context-dependent. Low = sponsor review required.</span></div></div>
+              <div className="signal-item"><div><strong>Human review required</strong><span>Mappings are starting points and must be checked against the current CDISC SDTMIG and study-specific standards before use.</span></div></div>
+            </div>
           </div>
-        </Panel>
+        </div>
       </div>
 
       {history.length ? (
-        <Panel title="Recent Mapping Sessions" subtitle="Saved locally in this browser only.">
-          <div className="history-list">
-            {history.map((item) => (
-              <button className="history-item" key={item.id} onClick={() => restoreMapping(item)}>
-                <strong>{item.fieldCount} fields</strong>
-                <span>{item.highConfidence} high-confidence mappings</span>
-                <small>{item.generatedAt}</small>
-              </button>
-            ))}
+        <div className="card">
+          <div className="card-head"><div><h3>Recent Sessions</h3><p>Saved locally in this browser</p></div></div>
+          <div className="card-body">
+            <div className="history-grid">
+              {history.map((item) => (
+                <button className="history-item" key={item.id} onClick={() => restoreMapping(item)}>
+                  <strong>{item.fieldCount} fields</strong>
+                  <span>{item.highConfidence} high-confidence</span>
+                  <small>{item.generatedAt}</small>
+                </button>
+              ))}
+            </div>
           </div>
-        </Panel>
+        </div>
       ) : null}
 
-      <Panel title="CRF to SDTM Mapping Results" subtitle="Suggested domain, variable, terminology, mapping note, confidence, and reference.">
-        <div className="findings-table mapping-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Row</th>
-                <th>CRF Field</th>
-                <th>Type</th>
-                <th>Domain</th>
-                <th>Variable</th>
-                <th>Variable Label</th>
-                <th>Controlled Terminology</th>
-                <th>Mapping Notes</th>
-                <th>Confidence</th>
-                <th>Reference</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mappings.map((row) => (
-                <tr key={row.rowId}>
-                  <td>{row.rowId}</td>
-                  <td>{row.crfField}</td>
-                  <td>{row.dataType}</td>
-                  <td>{row.domain}</td>
-                  <td>{row.variable}</td>
-                  <td>{row.variableLabel}</td>
-                  <td>{row.controlledTerminology}</td>
-                  <td>{row.notes}</td>
-                  <td><span className={`badge ${row.confidence === "High" ? "good" : row.confidence === "Medium" ? "warn" : "danger"}`}>{row.confidence}</span></td>
-                  <td>{row.reference}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="card elevated">
+        <div className="card-head"><div><h3>SDTM Mapping Results</h3><p>Domain, variable, terminology, notes, confidence, and SDTMIG reference</p></div></div>
+        <div className="card-body" style={{ padding: 0 }}>
+          {isMapping ? (
+            <div className="spinner-wrap"><div className="spinner" /><span>Mapping fields to SDTM…</span></div>
+          ) : (
+            <div className="table-wrap max-h-560">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Row</th><th>CRF Field</th><th>Type</th><th>Domain</th><th>Variable</th>
+                    <th>Variable Label</th><th>Controlled Terminology</th><th>Mapping Notes</th>
+                    <th>Confidence</th><th>Reference</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mappings.map((row) => (
+                    <tr key={row.rowId}>
+                      <td>{row.rowId}</td><td>{row.crfField}</td><td>{row.dataType}</td>
+                      <td>{row.domain}</td><td>{row.variable}</td><td>{row.variableLabel}</td>
+                      <td>{row.controlledTerminology}</td><td>{row.notes}</td>
+                      <td><Badge tone={row.confidence === "High" ? "success" : row.confidence === "Medium" ? "warning" : "critical"}>{row.confidence}</Badge></td>
+                      <td>{row.reference}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      </Panel>
+      </div>
     </div>
   );
 }
@@ -1271,6 +1392,7 @@ function ProtocolDqpModule() {
   const [protocolText, setProtocolText] = useState(SAMPLE_PROTOCOL_TEXT);
   const [nctId, setNctId] = useState("");
   const [isFetching, setIsFetching] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [fetchMessage, setFetchMessage] = useState("");
   const [activeOutput, setActiveOutput] = useState("dqp");
   const [signals, setSignals] = useState(() => extractProtocolSignals(SAMPLE_PROTOCOL_TEXT));
@@ -1278,19 +1400,23 @@ function ProtocolDqpModule() {
   const [history, setHistory] = useState(() => readStorage("clintrace360:dqpHistory", []));
 
   const generate = (text = protocolText, nctRecord) => {
-    const nextSignals = extractProtocolSignals(text, nctRecord);
-    const nextDqp = generateDqpPackage(nextSignals);
-    setSignals(nextSignals);
-    setDqp(nextDqp);
-    setHistory(saveHistoryItem("clintrace360:dqpHistory", {
-      id: `DQPH-${Date.now()}`,
-      generatedAt: new Date().toLocaleString(),
-      title: nextSignals.title,
-      phase: nextSignals.phase,
-      sourceText: text,
-      signals: nextSignals,
-      dqp: nextDqp,
-    }));
+    setIsGenerating(true);
+    setTimeout(() => {
+      const nextSignals = extractProtocolSignals(text, nctRecord);
+      const nextDqp = generateDqpPackage(nextSignals);
+      setSignals(nextSignals);
+      setDqp(nextDqp);
+      setHistory(saveHistoryItem("clintrace360:dqpHistory", {
+        id: `DQPH-${Date.now()}`,
+        generatedAt: new Date().toLocaleString(),
+        title: nextSignals.title,
+        phase: nextSignals.phase,
+        sourceText: text,
+        signals: nextSignals,
+        dqp: nextDqp,
+      }));
+      setIsGenerating(false);
+    }, 520);
   };
 
   const restoreDqp = (item) => {
@@ -1367,86 +1493,93 @@ function ProtocolDqpModule() {
 
   return (
     <div className="workspace">
-      <div className="kpi-grid protocol-kpis">
-        <KpiCard label="Detected Phase" value={signals.phase.replace("Phase ", "")} detail={signals.design} icon={FileText} />
-        <KpiCard label="Visits" value={signals.visits.length} detail={signals.visits.join(", ")} tone="accent" icon={ClipboardCheck} />
-        <KpiCard label="Priority Labs" value={signals.labs.length} detail={signals.labs.join(", ")} tone="warn" icon={Database} />
-        <KpiCard label="Edit Checks" value={dqp.editChecks.length} detail="Generated DQP checks" tone="accent" icon={ListChecks} />
+      <ModuleHead eyebrow="Phase 3 · Live" title="Protocol → DQP Generator" sub="Deterministic signal extraction from protocol synopsis to CDM deliverables">
+        <button className="btn" onClick={copyText}><ClipboardCheck size={14} />Copy Package</button>
+        <button className="btn" onClick={exportText}><Download size={14} />Export TXT</button>
+      </ModuleHead>
+
+      <div className="kpi-grid cols4">
+        <Kpi label="Phase" value={signals.phase.replace("Phase ", "")} sub={signals.design.slice(0, 48) || "—"} />
+        <Kpi label="Visits" tone="accent" value={signals.visits.length} sub={signals.visits.slice(0, 3).join(", ")} />
+        <Kpi label="Priority Labs" tone="warning" value={signals.labs.length} sub={signals.labs.join(", ")} />
+        <Kpi label="Edit Checks" tone="accent" value={dqp.editChecks.length} sub="Generated checks" />
       </div>
 
-      <div className="protocol-layout">
-        <Panel
-          title="Protocol Input"
-          subtitle="Paste a synopsis or load public ClinicalTrials.gov metadata by NCT ID."
-          action={
-            <div className="control-row nct-row">
-              <input value={nctId} onChange={(event) => setNctId(event.target.value)} placeholder="NCT12345678" aria-label="NCT ID" />
-              <button className="icon-button" onClick={fetchNct} disabled={isFetching}>
-                <Download size={17} />
-                {isFetching ? "Loading" : "Load NCT"}
+      <div className="form-grid">
+        <div className="card elevated">
+          <div className="card-head">
+            <div><h3>Protocol Input</h3><p>Paste a synopsis or load public ClinicalTrials.gov metadata</p></div>
+            <div className="card-head-actions">
+              <input type="text" value={nctId} onChange={(e) => setNctId(e.target.value)} placeholder="NCT12345678" aria-label="NCT ID" style={{ width: 140 }} />
+              <button className="btn" onClick={fetchNct} disabled={isFetching}>
+                <Download size={14} />{isFetching ? "Loading…" : "Load NCT"}
               </button>
             </div>
-          }
-        >
-          <textarea className="crf-input protocol-input" value={protocolText} onChange={(event) => setProtocolText(event.target.value)} spellCheck="false" />
-          <div className="mapper-actions">
-            <button className="icon-button" onClick={() => generate()}>
-              <FileText size={17} />
-              Generate DQP
-            </button>
-            <button className="icon-button" onClick={copyText}>
-              <ClipboardCheck size={17} />
-              Copy Package
-            </button>
-            <button className="icon-button" onClick={exportText}>
-              <Download size={17} />
-              Export TXT
-            </button>
           </div>
-          {fetchMessage ? <p className="inline-message">{fetchMessage}</p> : null}
-        </Panel>
+          <div className="card-body">
+            <textarea className="code-input" value={protocolText} onChange={(e) => setProtocolText(e.target.value)} spellCheck="false" style={{ minHeight: 320 }} />
+            <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>
+              <button className="btn primary" onClick={() => generate()} disabled={isGenerating}>
+                <FileText size={14} />{isGenerating ? "Generating…" : "Generate DQP"}
+              </button>
+            </div>
+            {fetchMessage && <div className="inline-msg">{fetchMessage}</div>}
+          </div>
+        </div>
 
-        <Panel title="Extracted Protocol Signals" subtitle="Transparent heuristic extraction used to drive the generated CDM deliverables.">
-          <div className="signal-list">
-            <section><strong>Study</strong><span>{signals.title}</span></section>
-            <section><strong>Endpoints</strong><span>{signals.endpoints.join(" ")}</span></section>
-            <section><strong>Eligibility</strong><span>{signals.eligibility.join(" ")}</span></section>
-            <section><strong>Safety</strong><span>{signals.safety.join(", ")}</span></section>
-            <section><strong>Dosing</strong><span>{signals.dosing}</span></section>
+        <div className="card">
+          <div className="card-head"><div><h3>Extracted Signals</h3><p>Transparent heuristic extraction</p></div></div>
+          <div className="card-body">
+            <div className="signal-list">
+              <div className="signal-item"><div><strong>Study</strong><span>{signals.title}</span></div></div>
+              <div className="signal-item"><div><strong>Endpoints</strong><span>{signals.endpoints.slice(0, 2).join(" ")}</span></div></div>
+              <div className="signal-item"><div><strong>Eligibility</strong><span>{signals.eligibility.slice(0, 2).join(" ")}</span></div></div>
+              <div className="signal-item"><div><strong>Safety</strong><span>{signals.safety.join(", ")}</span></div></div>
+              <div className="signal-item"><div><strong>Dosing</strong><span>{signals.dosing}</span></div></div>
+            </div>
           </div>
-        </Panel>
+        </div>
       </div>
 
-      <Panel
-        title="Generated DQP Package"
-        subtitle="Skeleton outputs for human CDM review; not validated for production use."
-        action={
-          <div className="control-row">
-            <button className={activeOutput === "dqp" ? "tab-button active" : "tab-button"} onClick={() => setActiveOutput("dqp")}>DQP</button>
-            <button className={activeOutput === "checks" ? "tab-button active" : "tab-button"} onClick={() => setActiveOutput("checks")}>Edit Checks</button>
-            <button className={activeOutput === "uat" ? "tab-button active" : "tab-button"} onClick={() => setActiveOutput("uat")}>UAT</button>
-            <button className={activeOutput === "risk" ? "tab-button active" : "tab-button"} onClick={() => setActiveOutput("risk")}>Risk Review</button>
+      <div className="card elevated">
+        <div className="card-head">
+          <div><h3>Generated DQP Package</h3><p>Skeleton for human CDM review — not validated for production use</p></div>
+          <div className="card-head-actions">
+            <div className="tab-row" style={{ borderBottom: "none", gap: 2 }}>
+              <button className={`tab${activeOutput === "dqp" ? " active" : ""}`} onClick={() => setActiveOutput("dqp")}>DQP</button>
+              <button className={`tab${activeOutput === "checks" ? " active" : ""}`} onClick={() => setActiveOutput("checks")}>Edit Checks</button>
+              <button className={`tab${activeOutput === "uat" ? " active" : ""}`} onClick={() => setActiveOutput("uat")}>UAT</button>
+              <button className={`tab${activeOutput === "risk" ? " active" : ""}`} onClick={() => setActiveOutput("risk")}>Risk Review</button>
+            </div>
           </div>
-        }
-      >
-        {activeOutput === "dqp" && <DqpSections rows={dqp.dqpSections} />}
-        {activeOutput === "checks" && <EditCheckTable rows={dqp.editChecks} />}
-        {activeOutput === "uat" && <UatTable rows={dqp.uatCases} />}
-        {activeOutput === "risk" && <RiskChecklistTable rows={dqp.reviewChecklist} />}
-      </Panel>
+        </div>
+        <div className="card-body">
+          {isGenerating ? (
+            <div className="spinner-wrap"><div className="spinner" /><span>Generating DQP package…</span></div>
+          ) : (
+            <>
+              {activeOutput === "dqp" && <DqpSections rows={dqp.dqpSections} />}
+              {activeOutput === "checks" && <EditCheckTable rows={dqp.editChecks} />}
+              {activeOutput === "uat" && <UatTable rows={dqp.uatCases} />}
+              {activeOutput === "risk" && <RiskChecklistTable rows={dqp.reviewChecklist} />}
+            </>
+          )}
+        </div>
+      </div>
 
       {history.length ? (
-        <Panel title="Recent DQP Generations" subtitle="Saved locally in this browser only.">
-          <div className="history-list">
-            {history.map((item) => (
-              <button className="history-item" key={item.id} onClick={() => restoreDqp(item)}>
-                <strong>{item.title}</strong>
-                <span>{item.phase}</span>
-                <small>{item.generatedAt}</small>
-              </button>
-            ))}
+        <div className="card">
+          <div className="card-head"><div><h3>Recent Sessions</h3><p>Saved locally in this browser</p></div></div>
+          <div className="card-body">
+            <div className="history-grid">
+              {history.map((item) => (
+                <button className="history-item" key={item.id} onClick={() => restoreDqp(item)}>
+                  <strong>{item.title}</strong><span>{item.phase}</span><small>{item.generatedAt}</small>
+                </button>
+              ))}
+            </div>
           </div>
-        </Panel>
+        </div>
       ) : null}
     </div>
   );
@@ -1454,12 +1587,12 @@ function ProtocolDqpModule() {
 
 function DqpSections({ rows }) {
   return (
-    <div className="dqp-sections">
+    <div style={{ display: "grid", gap: 10 }}>
       {rows.map((row) => (
-        <section key={row.section}>
-          <h4>{row.section}</h4>
-          <p>{row.content}</p>
-        </section>
+        <div className="section-block" key={row.section}>
+          <div className="section-block-head"><h4>{row.section}</h4></div>
+          <div className="section-block-body">{row.content}</div>
+        </div>
       ))}
     </div>
   );
@@ -1467,26 +1600,14 @@ function DqpSections({ rows }) {
 
 function EditCheckTable({ rows }) {
   return (
-    <div className="findings-table">
+    <div className="table-wrap max-h-520">
       <table>
-        <thead>
-          <tr>
-            <th>Check ID</th>
-            <th>Domain</th>
-            <th>Variable</th>
-            <th>Logic</th>
-            <th>Severity</th>
-            <th>Query Text</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Check ID</th><th>Domain</th><th>Variable</th><th>Logic</th><th>Severity</th><th>Query Text</th></tr></thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.checkId}>
-              <td>{row.checkId}</td>
-              <td>{row.domain}</td>
-              <td>{row.variable}</td>
-              <td>{row.logic}</td>
-              <td><span className={`badge ${row.severity === "Hard" ? "danger" : "warn"}`}>{row.severity}</span></td>
+              <td>{row.checkId}</td><td>{row.domain}</td><td>{row.variable}</td><td>{row.logic}</td>
+              <td><Badge tone={row.severity === "Hard" ? "critical" : "warning"}>{row.severity}</Badge></td>
               <td>{row.queryText}</td>
             </tr>
           ))}
@@ -1498,27 +1619,14 @@ function EditCheckTable({ rows }) {
 
 function UatTable({ rows }) {
   return (
-    <div className="findings-table">
+    <div className="table-wrap max-h-520">
       <table>
-        <thead>
-          <tr>
-            <th>TC ID</th>
-            <th>Module</th>
-            <th>Description</th>
-            <th>Input</th>
-            <th>Expected Result</th>
-            <th>Pass/Fail</th>
-          </tr>
-        </thead>
+        <thead><tr><th>TC ID</th><th>Module</th><th>Description</th><th>Input</th><th>Expected Result</th><th>Pass/Fail</th></tr></thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.testId}>
-              <td>{row.testId}</td>
-              <td>{row.module}</td>
-              <td>{row.description}</td>
-              <td>{row.input}</td>
-              <td>{row.expected}</td>
-              <td>___</td>
+              <td>{row.testId}</td><td>{row.module}</td><td>{row.description}</td>
+              <td>{row.input}</td><td>{row.expected}</td><td>—</td>
             </tr>
           ))}
         </tbody>
@@ -1529,175 +1637,19 @@ function UatTable({ rows }) {
 
 function RiskChecklistTable({ rows }) {
   return (
-    <div className="findings-table">
+    <div className="table-wrap max-h-520">
       <table>
-        <thead>
-          <tr>
-            <th>Risk Area</th>
-            <th>Priority</th>
-            <th>Frequency</th>
-            <th>Responsible</th>
-            <th>Indicators</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Risk Area</th><th>Priority</th><th>Frequency</th><th>Responsible</th><th>Indicators</th></tr></thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.riskArea}>
               <td>{row.riskArea}</td>
-              <td><span className={`badge ${row.priority === "High" ? "danger" : "warn"}`}>{row.priority}</span></td>
-              <td>{row.frequency}</td>
-              <td>{row.responsible}</td>
-              <td>{row.indicators}</td>
+              <td><Badge tone={row.priority === "High" ? "critical" : "warning"}>{row.priority}</Badge></td>
+              <td>{row.frequency}</td><td>{row.responsible}</td><td>{row.indicators}</td>
             </tr>
           ))}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-function SaeReconciliationTable({ rows }) {
-  return (
-    <div className="findings-table">
-      <table>
-        <thead>
-          <tr>
-            <th>Finding ID</th>
-            <th>Mismatch</th>
-            <th>Subject</th>
-            <th>EDC Value</th>
-            <th>Safety DB Value</th>
-            <th>Severity</th>
-            <th>Query</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.findingId}>
-              <td>{row.findingId}</td>
-              <td>{row.mismatchType}</td>
-              <td>{row.USUBJID}</td>
-              <td>{row.edcValue}</td>
-              <td>{row.safetyValue}</td>
-              <td><span className={`badge ${row.severity === "Critical" ? "danger" : "warn"}`}>{row.severity}</span></td>
-              <td>{row.queryId}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function LabReconciliationTable({ rows }) {
-  return (
-    <div className="findings-table">
-      <table>
-        <thead>
-          <tr>
-            <th>Finding ID</th>
-            <th>Mismatch</th>
-            <th>Subject</th>
-            <th>Test</th>
-            <th>Date</th>
-            <th>EDC Value</th>
-            <th>Local Value</th>
-            <th>Severity</th>
-            <th>Query</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.findingId}>
-              <td>{row.findingId}</td>
-              <td>{row.mismatchType}</td>
-              <td>{row.USUBJID}</td>
-              <td>{row.LBTESTCD}</td>
-              <td>{row.LBDT}</td>
-              <td>{row.edcValue}</td>
-              <td>{row.localValue}</td>
-              <td><span className="badge warn">{row.severity}</span></td>
-              <td>{row.queryId}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function QueryLogTable({ rows }) {
-  return (
-    <div className="findings-table query-log">
-      <table>
-        <thead>
-          <tr>
-            <th>Query ID</th>
-            <th>Type</th>
-            <th>Subject</th>
-            <th>Mismatch</th>
-            <th>Query Text</th>
-            <th>Severity</th>
-            <th>Status</th>
-            <th>Generated</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.queryId}>
-              <td>{row.queryId}</td>
-              <td>{row.type}</td>
-              <td>{row.USUBJID}</td>
-              <td>{row.mismatchType}</td>
-              <td>{row.queryText}</td>
-              <td><span className={`badge ${row.severity === "Critical" ? "danger" : "warn"}`}>{row.severity}</span></td>
-              <td>{row.status}</td>
-              <td>{row.generatedAt}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function PlaceholderModule({ title, icon: Icon, phase, bullets }) {
-  return (
-    <div className="placeholder">
-      <div className="placeholder-mark"><Icon size={28} /></div>
-      <p className="eyebrow">{phase}</p>
-      <h3>{title}</h3>
-      <div className="placeholder-grid">
-        {bullets.map((item) => (
-          <section key={item.title}>
-            <h4>{item.title}</h4>
-            <p>{item.copy}</p>
-          </section>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function AboutModule() {
-  return (
-    <div className="workspace">
-      <Panel title="Methodology and Honest Boundaries" subtitle="What this build demonstrates, and what it deliberately does not claim">
-        <div className="about-grid">
-          <section>
-            <h4>Current build</h4>
-            <p>Phase 1 implements a browser-based clinical data review dashboard using synthetic CDISC-style DM, SV, LB, AE, and EX data. Every finding is generated from explicit rule logic, making the result explainable and audit-friendly.</p>
-          </section>
-          <section>
-            <h4>Limitations</h4>
-            <p>This is a training and portfolio workbench, not a validated CDMS. It uses synthetic data, has no patient data, and is not connected to Medidata Rave, Oracle InForm, or a production safety database.</p>
-          </section>
-          <section>
-            <h4>Next phases</h4>
-            <p>The core four-module workflow is implemented locally. Remaining work is production polish: screenshots, deployment setup, responsive visual QA, and optional LLM-backed upgrades for sponsor-specific ambiguity.</p>
-          </section>
-        </div>
-      </Panel>
     </div>
   );
 }
@@ -1711,10 +1663,9 @@ export default function ClinTrace360() {
   return (
     <AppShell activeModule={activeModule} setActiveModule={setActiveModule}>
       {activeModule === "review" && <DataReviewDashboard data={data} findings={findings} />}
-      {activeModule === "protocol" && <ProtocolDqpModule />}
-      {activeModule === "mapper" && <CrfMapperModule />}
       {activeModule === "recon" && <ReconciliationModule reconciliation={reconciliation} />}
-      {activeModule === "about" && <AboutModule />}
+      {activeModule === "dqp" && <ProtocolDqpModule />}
+      {activeModule === "mapper" && <CrfMapperModule />}
     </AppShell>
   );
 }
