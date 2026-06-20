@@ -16,3 +16,5 @@ yarn-error.log*
 cLINEVAL.zip
 new index.html
 *.zip
+
+.vercel

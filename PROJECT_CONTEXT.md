@@ -140,6 +140,10 @@ Implemented so far:
 - Data model and deployment docs added.
 - Stale About-panel wording corrected so it no longer describes implemented modules as future work.
 - Methodology/About screen added with honest limitations: synthetic data only, not a validated CDMS, no EDC integration, and training/portfolio use only.
+- README updated with recruiter evaluation guide, signal table, skill-evidence mapping, and the live Vercel demo link.
+- Repo cleanup rules added to `.gitignore` for `.claude/`, ZIP scratch files, and the old `new index.html` working artifact.
+- Responsive CSS hardening added for tablet/mobile widths: wrapped card actions, horizontally scrollable tabs, mobile topbar simplification, full-width mobile action controls, one-column 480px sections, and horizontal table scrolling.
+- Production Vercel URL confirmed: `https://clin-trace360.vercel.app/`.
 
 ## Verification So Far
 
@@ -150,9 +154,11 @@ Implemented so far:
 - `npm run build` passed again after the Protocol-to-DQP Generator was added.
 - `npm run build` passed again after local persistence and README work.
 - `npm run build` passed after deployment packaging and Vite chunk configuration.
+- `npm run build` passed after responsive CSS hardening.
 - Prior bundle-size warning was resolved by splitting Recharts and lucide-react into separate chunks.
 - The dev server responded with HTTP 200 at `http://127.0.0.1:5173`.
-- The Codex in-app browser blocked localhost with `ERR_BLOCKED_BY_CLIENT`, so visual browser verification is still pending outside that blocker.
+- The live Vercel deployment responded at `https://clin-trace360.vercel.app/`.
+- Headless Chrome/Edge screenshot capture failed locally because Chromium GPU initialization crashed/hung in this environment; visual screenshot capture is still pending from a normal browser or Vercel preview context.
 
 Useful commands:
 
@@ -168,15 +174,21 @@ Local app URL:
 http://127.0.0.1:5173
 ```
 
+Live app URL:
+
+```text
+https://clin-trace360.vercel.app/
+```
+
 ## Known Caveats
 
-- No Git repository is initialized yet.
+- Git repository is initialized and has `origin` set to `https://github.com/priyamthakar/ClinTrace360.git`.
 - `dist/` and `node_modules/` exist locally because dependencies were installed and the production build was run.
 - CRF-to-SDTM mapping is currently deterministic/rule-based, not LLM-backed.
 - Protocol-to-DQP generation is currently deterministic/rule-based, not LLM-backed.
 - ClinicalTrials.gov lookup depends on browser network access and CORS behavior.
 - Phase 2 uses deterministic synthetic external data, not real safety or laboratory systems.
-- Browser-level visual QA still needs to be completed in a browser that does not block localhost.
+- Browser-level visual screenshot QA still needs to be completed in a browser that does not block/crash Chromium headless.
 - GitHub Pages workflow assumes the repository default branch is `main` and Pages source is configured for GitHub Actions.
 
 ## Next Plan
@@ -191,11 +203,16 @@ Completed additions:
 - Vite static build config and manual chunking.
 - Project license and `.gitignore`.
 - Synthetic data model docs.
+- Vercel deployment live URL.
+- Recruiter-facing README evaluation guide and skill-evidence mapping.
+- Source-level responsive CSS hardening for 768px and 480px breakpoints.
 
 Remaining additions:
 
-- Screenshots and live demo instructions.
-- Responsive visual QA across desktop and mobile.
+- Screenshots from the live Vercel URL.
+- Visual responsive QA across desktop and mobile using a browser that can render the live site.
+- Rule Library screen.
+- Unit tests for rule checks, reconciliation, CRF mapping, and DQP generation.
 - Optional future enhancement: add LLM assistance to Protocol-to-DQP and CRF-to-SDTM workflows for ambiguous sponsor-specific content.
 
 
