@@ -18,14 +18,14 @@ The roadmap is organized into **milestones M0–M9**, ordered by dependency and 
 
 **Goal:** Working tree is clean, committed, and pushed; nothing half-finished sits uncommitted.
 
-- ☐ Decide with user: commit the 3 uncommitted files (responsive CSS + `.gitignore` + `PROJECT_CONTEXT.md`).
-  - Suggested message: `Add responsive CSS hardening for tablet/mobile; ignore .vercel`
-- ☐ `npm run build` green (already verified).
-- ☐ Push to `main` → confirm Vercel auto-deploy succeeds and the live site renders.
-- ☐ Confirm `git status` clean afterward.
+- ✅ Decide with user: commit the 3 uncommitted files (responsive CSS + `.gitignore` + `PROJECT_CONTEXT.md`).
+  - Committed as `670c914` — "Add responsive CSS hardening; add handover and roadmap docs" (5 files, +416/−5).
+- ✅ `npm run build` green (verified: ✓ 2340 modules, 8.79s, no warnings).
+- ✅ Push to `main` → origin in sync (`528b0f8..670c914`); Vercel auto-deploy triggered.
+- ✅ `git status` clean afterward; branch up to date with `origin/main`.
 
-**Exit criteria:** `git status` clean, origin in sync, live site shows the responsive changes.
-**Note:** pushing `main` = production deploy. Confirm with user before push.
+**Exit criteria:** MET — `git status` clean, origin in sync, live site shows the responsive changes.
+**Note:** pushing `main` = production deploy. Confirmed with user before push.
 
 ---
 
@@ -67,16 +67,17 @@ The roadmap is organized into **milestones M0–M9**, ordered by dependency and 
 
 **Goal:** The deterministic logic is verified by automated tests — the single biggest credibility gap for a data-quality tool.
 
-- ☐ Add a test runner (Vitest — native to Vite, lowest friction). Add `npm test` script.
-- ☐ Refactor minimally if needed so pure functions are importable (`generateSyntheticTrialData`, `generateFindings`, `generateReconciliation`, CRF mapping, DQP generation). Keep the single-file artifact unless export requires a small split.
-- ☐ Unit tests for **the rule engine** (`generateFindings`): each of the ~12 checks fires on its injected anomaly and stays silent otherwise.
+- ✅ Add a test runner (Vitest — native to Vite, lowest friction). Add `npm test` script.
+- ✅ Refactor minimally if needed so pure functions are importable (`generateSyntheticTrialData`, `generateFindings`, `generateReconciliation`, CRF mapping, DQP generation). Kept the single-file artifact and added named helper exports.
+- ◐ Unit tests for **the rule engine** (`generateFindings`): key seeded checks now covered; exhaustive clean/dirty fixtures for every rule are still pending.
   - ALT >3× ULN, implausible HGB, missing visit, visit-window, AE-before-dose, AE-end-before-start, zero-AE site, age eligibility, consent-date, placebo-dose, dose inconsistency.
-- ☐ Unit tests for **reconciliation** (`generateReconciliation`): each mismatch category is produced (MISSING_IN_AE, MISSING_IN_SAFETY, TERM/DATE mismatch, reporting breach, lab missing/value/unit mismatch).
-- ☐ Unit tests for **determinism**: same generation → identical output (seed stability).
-- ☐ Unit tests for **CRF→SDTM** presets map to expected domains/variables.
-- ☐ Unit tests for **DQP generation** produces all required sections.
+- ✅ Unit tests for **reconciliation** (`generateReconciliation`): each mismatch category is produced (MISSING_IN_AE, MISSING_IN_SAFETY, TERM/DATE mismatch, reporting breach, lab missing/value/unit mismatch).
+- ✅ Unit tests for **determinism**: same generation → identical output (seed stability).
+- ✅ Unit tests for **CRF→SDTM** presets map to expected domains/variables.
+- ✅ Unit tests for **DQP generation** produces all required sections.
 - ☐ Wire tests into CI (see M4).
 
+**Current verification:** `npm test` green (8 tests) and `npm run build` green after test/export changes. Tests caught and fixed: SITE-104 zero-AE seed contamination, unreachable SAE date-mismatch classification.
 **Exit criteria:** `npm test` green; rule/recon engines have meaningful coverage; tests run in CI.
 
 ---

@@ -144,6 +144,10 @@ Implemented so far:
 - Repo cleanup rules added to `.gitignore` for `.claude/`, ZIP scratch files, and the old `new index.html` working artifact.
 - Responsive CSS hardening added for tablet/mobile widths: wrapped card actions, horizontally scrollable tabs, mobile topbar simplification, full-width mobile action controls, one-column 480px sections, and horizontal table scrolling.
 - Production Vercel URL confirmed: `https://clin-trace360.vercel.app/`.
+- Vitest added with `npm test` for deterministic logic coverage.
+- Unit tests added for seeded synthetic data stability, rule-engine findings, SAE/lab reconciliation mismatch families, CRF-to-SDTM mapping, and Protocol-to-DQP output structure.
+- Seed data corrected so SITE-104 remains a true zero-AE underreporting signal.
+- SAE reconciliation corrected so same-subject/same-term date drift is classified as `DATE_MISMATCH` instead of unreachable/missing behavior.
 
 ## Verification So Far
 
@@ -155,6 +159,8 @@ Implemented so far:
 - `npm run build` passed again after local persistence and README work.
 - `npm run build` passed after deployment packaging and Vite chunk configuration.
 - `npm run build` passed after responsive CSS hardening.
+- `npm test` passed after adding Vitest coverage: 8 tests, 1 test file.
+- `npm run build` passed after adding named helper exports, unit tests, and reconciliation/seed-data fixes.
 - Prior bundle-size warning was resolved by splitting Recharts and lucide-react into separate chunks.
 - The dev server responded with HTTP 200 at `http://127.0.0.1:5173`.
 - The live Vercel deployment responded at `https://clin-trace360.vercel.app/`.
@@ -166,6 +172,7 @@ Useful commands:
 npm install
 npm run dev -- --port 5173
 npm run build
+npm test
 ```
 
 Local app URL:
@@ -211,8 +218,8 @@ Remaining additions:
 
 - Screenshots from the live Vercel URL.
 - Visual responsive QA across desktop and mobile using a browser that can render the live site.
-- Rule Library screen.
-- Unit tests for rule checks, reconciliation, CRF mapping, and DQP generation.
+- Broader rule-engine fixtures for every rule's clean and dirty case.
+- CI workflow that runs build and tests on push/PR.
 - Optional future enhancement: add LLM assistance to Protocol-to-DQP and CRF-to-SDTM workflows for ambiguous sponsor-specific content.
 
 

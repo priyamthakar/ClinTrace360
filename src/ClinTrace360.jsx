@@ -527,7 +527,7 @@ function generateSyntheticTrialData() {
     { ...ae[0], USUBJID: dm[5].USUBJID, SITEID: dm[5].SITEID, AETERM: "Migraine", AESTDTC: iso(addDays(new Date(dm[5].RFSTDTC), -3)), AEENDTC: iso(addDays(new Date(dm[5].RFSTDTC), 2)) },
     { ...ae[1], USUBJID: dm[12].USUBJID, SITEID: dm[12].SITEID, AETERM: "Vomiting", AESTDTC: iso(addDays(new Date(dm[12].RFSTDTC), -2)), AEENDTC: iso(addDays(new Date(dm[12].RFSTDTC), 4)) },
     { ...ae[2], USUBJID: dm[18].USUBJID, SITEID: dm[18].SITEID, AETERM: "Rash", AESTDTC: iso(addDays(new Date(dm[18].RFSTDTC), 40)), AEENDTC: iso(addDays(new Date(dm[18].RFSTDTC), 35)) },
-    { ...ae[3], USUBJID: dm[24].USUBJID, SITEID: dm[24].SITEID, AETERM: "Severe dehydration", AESER: "Y", AESEV: "SEVERE", AESTDTC: iso(addDays(new Date(dm[24].RFSTDTC), 34)), AEENDTC: iso(addDays(new Date(dm[24].RFSTDTC), 41)) }
+    { ...ae[3], USUBJID: dm[23].USUBJID, SITEID: dm[23].SITEID, AETERM: "Severe dehydration", AESER: "Y", AESEV: "SEVERE", AESTDTC: iso(addDays(new Date(dm[23].RFSTDTC), 34)), AEENDTC: iso(addDays(new Date(dm[23].RFSTDTC), 41)) }
   );
   [
     { subject: dm[22].USUBJID, visit: 3, dose: 50 },
@@ -752,13 +752,14 @@ function generateReconciliation(data) {
     const sameSubject = seriousAes.filter((ae) => ae.USUBJID === sae.USUBJID);
     const exact = sameSubject.find((ae) => normalizeTerm(ae.AETERM) === normalizeTerm(sae.SAETERM) && Math.abs(daysBetween(ae.AESTDTC, sae.SAESTDTC)) <= 1);
     const near = sameSubject.find((ae) => Math.abs(daysBetween(ae.AESTDTC, sae.SAESTDTC)) <= 1);
-    if (!exact && !near) {
+    const sameTerm = sameSubject.find((ae) => normalizeTerm(ae.AETERM) === normalizeTerm(sae.SAETERM));
+    if (!exact && !near && !sameTerm) {
       const queryText = fillTemplate(QUERY_TEMPLATES.MISSING_IN_AE, sae);
       const queryId = addQuery("SAE", "MISSING_IN_AE", "Critical", sae.USUBJID, "Safety database has SAE with no matching serious AE in EDC.", queryText, sae.SAESSION);
       saeFindings.push({ findingId: `SAE-${String(saeFindings.length + 1).padStart(3, "0")}`, mismatchType: "MISSING_IN_AE", severity: "Critical", queryId, edcValue: "No matching AESER='Y' AE", safetyValue: `${sae.SAETERM} / ${sae.SAESTDTC}`, ...sae });
       return;
     }
-    const matchedAe = exact ?? near;
+    const matchedAe = exact ?? near ?? sameTerm;
     if (normalizeTerm(matchedAe.AETERM) !== normalizeTerm(sae.SAETERM)) {
       const queryText = fillTemplate(QUERY_TEMPLATES.TERM_MISMATCH, { ...matchedAe, ...sae });
       const queryId = addQuery("SAE", "TERM_MISMATCH", "Major", sae.USUBJID, "EDC AE term differs from safety database SAE term.", queryText, sae.SAESSION);
@@ -777,7 +778,7 @@ function generateReconciliation(data) {
   });
 
   seriousAes.forEach((ae) => {
-    const matchingSae = data.safety.find((sae) => sae.USUBJID === ae.USUBJID && Math.abs(daysBetween(ae.AESTDTC, sae.SAESTDTC)) <= 1);
+    const matchingSae = data.safety.find((sae) => sae.USUBJID === ae.USUBJID && (Math.abs(daysBetween(ae.AESTDTC, sae.SAESTDTC)) <= 1 || normalizeTerm(ae.AETERM) === normalizeTerm(sae.SAETERM)));
     if (!matchingSae) {
       const queryText = fillTemplate(QUERY_TEMPLATES.MISSING_IN_SAFETY, ae);
       const queryId = addQuery("SAE", "MISSING_IN_SAFETY", "Critical", ae.USUBJID, "EDC AE is marked serious but no corresponding safety SAE record was found.", queryText, `${ae.USUBJID}-${ae.AETERM}`);
@@ -856,6 +857,20 @@ function buildSiteSignals(findings) {
     return { site, count, critCount, pct: Math.round((count / max) * 100), tone: critCount > 0 ? "critical" : count > 5 ? "warning" : "success" };
   });
 }
+
+export {
+  CRF_TEMPLATES,
+  RULE_LIBRARY,
+  SAMPLE_PROTOCOL_TEXT,
+  extractProtocolSignals,
+  formatCrfFields,
+  generateDqpPackage,
+  generateFindings,
+  generateReconciliation,
+  generateSyntheticTrialData,
+  mapCrfField,
+  parseCrfInput,
+};
 
 function AppShell({ activeModule, setActiveModule, children }) {
   const active = modules.find((m) => m.id === activeModule);

@@ -98,6 +98,7 @@ Open **http://localhost:5173**
 
 ```bash
 npm run build    # production build → dist/
+npm test         # deterministic unit tests
 npm run preview  # serve the production build locally
 ```
 
