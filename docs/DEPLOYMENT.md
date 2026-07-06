@@ -1,6 +1,10 @@
 # ClinTrace360 Deployment
 
-ClinTrace360 is a static Vite React app and can be deployed to any static host.
+ClinTrace360 is a static Vite React app. The canonical live deployment is Vercel:
+
+```text
+https://clin-trace360.vercel.app/
+```
 
 ## Local Build
 
@@ -17,22 +21,34 @@ The production output is written to `dist/`.
 npm run preview -- --port 4173
 ```
 
-## GitHub Pages
+## Vercel
 
-This repository includes a GitHub Actions workflow at `.github/workflows/deploy.yml`.
+Vercel auto-deploys the `main` branch from GitHub. Pushes to `main` should be treated as production deploys.
 
-Recommended setup:
+Recommended setup if reconnecting the project:
 
-1. Push the repository to GitHub.
-2. In GitHub, open repository settings.
-3. Go to **Pages**.
-4. Set source to **GitHub Actions**.
-5. Push to `main`.
+1. Import `https://github.com/priyamthakar/ClinTrace360` into Vercel.
+2. Use the default Vite build settings:
+   - Build command: `npm run build`
+   - Output directory: `dist`
+3. Keep the production domain pointed at `clin-trace360.vercel.app`.
 
-The workflow installs dependencies, builds the Vite app, uploads `dist/`, and deploys it to Pages.
+## GitHub Actions
+
+The repository includes CI at `.github/workflows/ci.yml`.
+
+On push and pull request, CI runs:
+
+```powershell
+npm ci
+npm test
+npm run build
+```
+
+GitHub Actions does not deploy the app. Deployment is handled by Vercel.
 
 ## Notes
 
-- The Vite config uses `base: "./"` so the built app can work under a repository subpath.
+- The Vite config uses `base: "/"` for the Vercel root deployment.
 - ClinicalTrials.gov lookup depends on browser network and CORS availability.
 - The app is a portfolio/training workbench, not a validated clinical system.

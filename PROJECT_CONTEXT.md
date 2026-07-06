@@ -22,7 +22,7 @@ The target positioning is a pharma-facing portfolio tool for Clinical Data Scien
 - `LICENSE`: MIT license.
 - `.gitignore`: excludes dependencies, build output, local env files, and OS noise.
 - `vite.config.js`: Vite React config with relative static base and manual chunks for chart/icon vendor code.
-- `.github/workflows/deploy.yml`: GitHub Pages deployment workflow.
+- `.github/workflows/ci.yml`: GitHub Actions CI workflow for install, tests, and production build.
 - `docs/DATA_MODEL.md`: synthetic data model and rule-check documentation.
 - `docs/DEPLOYMENT.md`: local build/preview and GitHub Pages deployment notes.
 - `package.json`: Vite/React scripts and dependencies.
@@ -148,6 +148,8 @@ Implemented so far:
 - Unit tests added for seeded synthetic data stability, rule-engine findings, SAE/lab reconciliation mismatch families, CRF-to-SDTM mapping, and Protocol-to-DQP output structure.
 - Seed data corrected so SITE-104 remains a true zero-AE underreporting signal.
 - SAE reconciliation corrected so same-subject/same-term date drift is classified as `DATE_MISMATCH` instead of unreachable/missing behavior.
+- GitHub Actions CI added for `npm ci`, `npm test`, and `npm run build` on push/PR.
+- Deployment docs updated so Vercel is the canonical production deploy and GitHub Actions is CI only.
 
 ## Verification So Far
 
@@ -161,6 +163,7 @@ Implemented so far:
 - `npm run build` passed after responsive CSS hardening.
 - `npm test` passed after adding Vitest coverage: 8 tests, 1 test file.
 - `npm run build` passed after adding named helper exports, unit tests, and reconciliation/seed-data fixes.
+- GitHub Actions workflow updated to run tests before build; local `npm test` and `npm run build` passed after the CI/docs changes.
 - Prior bundle-size warning was resolved by splitting Recharts and lucide-react into separate chunks.
 - The dev server responded with HTTP 200 at `http://127.0.0.1:5173`.
 - The live Vercel deployment responded at `https://clin-trace360.vercel.app/`.
@@ -196,7 +199,8 @@ https://clin-trace360.vercel.app/
 - ClinicalTrials.gov lookup depends on browser network access and CORS behavior.
 - Phase 2 uses deterministic synthetic external data, not real safety or laboratory systems.
 - Browser-level visual screenshot QA still needs to be completed in a browser that does not block/crash Chromium headless.
-- GitHub Pages workflow assumes the repository default branch is `main` and Pages source is configured for GitHub Actions.
+- Vercel auto-deploys `main`; pushing to `main` should be treated as a production deploy.
+- GitHub Actions is CI-only and does not deploy the app.
 
 ## Next Plan
 
@@ -219,7 +223,7 @@ Remaining additions:
 - Screenshots from the live Vercel URL.
 - Visual responsive QA across desktop and mobile using a browser that can render the live site.
 - Broader rule-engine fixtures for every rule's clean and dirty case.
-- CI workflow that runs build and tests on push/PR.
+- Optional branch protection requiring CI before merge to `main`.
 - Optional future enhancement: add LLM assistance to Protocol-to-DQP and CRF-to-SDTM workflows for ambiguous sponsor-specific content.
 
 

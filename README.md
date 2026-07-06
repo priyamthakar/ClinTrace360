@@ -1,5 +1,7 @@
 # ClinTrace360
 
+[![CI](https://github.com/priyamthakar/ClinTrace360/actions/workflows/ci.yml/badge.svg)](https://github.com/priyamthakar/ClinTrace360/actions/workflows/ci.yml)
+
 **Clinical Data Quality & Protocol-to-DQP Workbench**
 
 A portfolio-grade clinical data operations platform demonstrating CDM workflows, CDISC SDTM standards, SAE/lab reconciliation, and audit-ready data quality practices.

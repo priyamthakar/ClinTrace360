@@ -86,9 +86,9 @@ The roadmap is organized into **milestones M0–M9**, ordered by dependency and 
 
 **Goal:** Every push is automatically built and tested; deploy story is unambiguous.
 
-- ☐ GitHub Actions workflow: on push/PR → `npm ci`, `npm run build`, `npm test`.
-- ☐ Reconcile deploy story: repo has a GitHub Pages workflow AND Vercel auto-deploy. Pick one canonical deploy path (Vercel is live) and either remove or clearly document the Pages workflow to avoid confusion.
-- ☐ Add a build/test status badge to `README.md`.
+- ✅ GitHub Actions workflow: on push/PR → `npm ci`, `npm test`, `npm run build`.
+- ✅ Reconcile deploy story: Vercel is canonical production deploy; GitHub Actions is CI only.
+- ✅ Add a build/test status badge to `README.md`.
 - ☐ Branch protection optional: require CI green before merge to `main`.
 
 **Exit criteria:** Green CI badge on README; one documented deploy path.
