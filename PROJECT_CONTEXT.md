@@ -2,240 +2,154 @@
 
 ## Purpose
 
-ClinTrace360 is a browser-based Clinical Data Quality and Protocol-to-DQP Workbench. It is being built to demonstrate practical Clinical Data Scientist workflows: protocol interpretation, Data Quality Plan generation, CRF-to-SDTM mapping, clinical data review, anomaly detection, SAE reconciliation, local lab reconciliation, and audit-ready query logging.
+ClinTrace360 is a browser-based Clinical Data Quality and Protocol-to-DQP Workbench. It is designed to demonstrate practical Clinical Data Scientist (CDS) and Clinical Data Manager (CDM) workflows: protocol analysis, Data Quality Plan (DQP) compilation, CRF-to-SDTM mapping, clinical data review, anomaly detection, SAE PV reconciliation, local lab normalization, and audit-ready query lifecycle tracking.
 
-The target positioning is a pharma-facing portfolio tool for Clinical Data Scientist work. The app should feel like an internal clinical operations/data management workbench, not a consumer landing page.
+The application serves as a high-fidelity portfolio piece illustrating standard clinical operations, data validation rules, and CDISC standards in an internal workbench style.
+
+---
 
 ## Current Stack
 
-- Vite
-- React 19
-- Recharts
-- lucide-react
-- Plain CSS in `src/styles.css`
-- Synthetic in-app data only for the current build
+- **Build Tooling**: Vite 7
+- **UI Framework**: React 19 (Functional Components, Hooks)
+- **Data Visualizations**: Recharts 3.5 (Scatter plots, stacked bars, cell heatmaps)
+- **Icons**: Lucide-react 0.556
+- **Styling**: Standard CSS Custom Properties in `src/styles.css` (supporting persistent Light/Dark themes)
+- **Persistence**: Browser `localStorage` for active session caching (session history, queries)
+- **Test Framework**: Vitest (for unit and logic coverage)
 
-## Current Files
+---
 
-- `ClinTrace360_PROJECT_PLAN.md`: full original project plan and phase roadmap.
-- `README.md`: project overview, modules, setup commands, methodology, and limitations.
-- `LICENSE`: MIT license.
-- `.gitignore`: excludes dependencies, build output, local env files, and OS noise.
-- `vite.config.js`: Vite React config with relative static base and manual chunks for chart/icon vendor code.
-- `.github/workflows/ci.yml`: GitHub Actions CI workflow for install, tests, and production build.
-- `docs/DATA_MODEL.md`: synthetic data model and rule-check documentation.
-- `docs/DEPLOYMENT.md`: local build/preview and GitHub Pages deployment notes.
-- `package.json`: Vite/React scripts and dependencies.
-- `package-lock.json`: installed dependency lockfile.
-- `index.html`: Vite entry HTML.
-- `src/main.jsx`: React root mount.
-- `src/ClinTrace360.jsx`: single-file React application, synthetic data generation, dashboard logic, reconciliation logic, CRF-to-SDTM mapping logic, and Protocol-to-DQP generation logic.
-- `src/styles.css`: application styling.
-- `dist/`: local production build output from `npm run build`.
-- `node_modules/`: local dependencies from `npm install`.
+## Modularized Architecture
 
-## What Is Done Now
+The application has been fully refactored from a single-file monolith into a clean, modular structure. Below is the directory map:
 
-Phase 1 foundation, Phase 2 reconciliation, and the Phase 3 local assistant modules are now implemented in the runnable app.
-
-Implemented so far:
-
-- Vite React app scaffolded.
-- Pharma-style app shell with dark sidebar navigation and white clinical work area.
-- Module navigation added for:
-  - Protocol to DQP
-  - CRF to SDTM Mapper
-  - Data Review Dashboard
-  - SAE/Lab Reconciliation
-  - Methodology
-- Phase 1 Data Review Dashboard implemented as the active/default module.
-- Synthetic CDISC-style data generation implemented for:
-  - `DM` demographics
-  - `SV` subject visits
-  - `LB` laboratory results
-  - `AE` adverse events
-  - `EX` exposure/dosing
-- Rule-based findings engine implemented for:
-  - Missing visits
-  - Visit window violations
-  - Lab range violations
-  - ALT greater than 3x ULN
-  - Implausibly low hemoglobin
-  - AE start before first dose
-  - AE end before AE start
-  - Zero-AE site underreporting signal
-  - Age eligibility violation
-  - First dose before consent
-  - Placebo-arm non-zero dosing
-  - Drug A dose inconsistency
-- Dashboard UI implemented with:
-  - KPI cards
-  - Site-level findings stacked bar chart
-  - Lab trajectory review panel
-  - AE analysis panel
-  - Visit compliance heatmap
-  - Audit-style findings log table
-- CSV export for visible findings implemented.
-- Placeholder screens added for Phase 2 and Phase 3 modules so the navigation reflects the full roadmap without claiming unfinished functionality is complete.
-- Phase 2 SAE/Lab Reconciliation module implemented.
-- Synthetic safety database/SAE records added.
-- Synthetic local lab feed added.
-- SAE reconciliation implemented for:
-  - Safety SAE missing from EDC serious AE records.
-  - EDC serious AE missing from safety database.
-  - SAE/AE term mismatch.
-  - SAE/AE date mismatch.
-  - SAE reporting timeline breach.
-- Local lab reconciliation implemented for:
-  - Local lab result missing from EDC LB domain.
-  - EDC/local value mismatch.
-  - EDC/local unit mismatch.
-- Query log implemented with query ID, type, mismatch type, subject, query text, severity, status, timestamp, and source reference.
-- CSV export implemented for the active reconciliation tab.
-- CRF-to-SDTM Mapper implemented as a local deterministic module.
-- Preset CRF templates implemented for:
-  - Demographics
-  - Vital signs
-  - Adverse events
-  - Concomitant medications
-  - Lab results
-- Freeform CRF field input implemented using `Label | Data Type | Codelist` rows.
-- Mapping output table implemented with:
-  - CRF field
-  - data type
-  - SDTM domain
-  - SDTM variable
-  - variable label
-  - controlled terminology
-  - mapping notes
-  - confidence
-  - SDTMIG reference
-- CSV export implemented for SDTM mapping results.
-- Protocol-to-DQP Generator implemented as a local deterministic module.
-- Protocol synopsis textarea added with sample protocol content.
-- Optional ClinicalTrials.gov NCT ID lookup UI added using the public API endpoint from the browser.
-- Protocol signal extraction implemented for:
-  - study title
-  - phase
-  - study design
-  - endpoints
-  - eligibility language
-  - visit schedule terms
-  - priority labs
-  - safety monitoring terms
-  - dosing/comparator signal
-- Generated DQP output implemented with:
-  - DQP document sections
-  - edit check specifications
-  - UAT test cases
-  - risk-based data review checklist
-- Copy-to-clipboard and TXT export implemented for the generated DQP package.
-- Local browser history implemented for generated DQP packages.
-- Local browser history implemented for CRF-to-SDTM mapping sessions.
-- README created with setup instructions, module summary, methodology, and limitations.
-- Vite config added for static deployment and cleaner vendor chunking.
-- GitHub Actions CI workflow added.
-- MIT license added.
-- `.gitignore` added.
-- Data model and deployment docs added.
-- Stale About-panel wording corrected so it no longer describes implemented modules as future work.
-- Methodology/About screen added with honest limitations: synthetic data only, not a validated CDMS, no EDC integration, and training/portfolio use only.
-- README updated with recruiter evaluation guide, signal table, skill-evidence mapping, and the live Vercel demo link.
-- Repo cleanup rules added to `.gitignore` for `.claude/`, ZIP scratch files, and the old `new index.html` working artifact.
-- Responsive CSS hardening added for tablet/mobile widths: wrapped card actions, horizontally scrollable tabs, mobile topbar simplification, full-width mobile action controls, one-column 480px sections, and horizontal table scrolling.
-- Production Vercel URL confirmed: `https://clin-trace360.vercel.app/`.
-- Vitest added with `npm test` for deterministic logic coverage.
-- Unit tests added for seeded synthetic data stability, rule-engine findings, SAE/lab reconciliation mismatch families, CRF-to-SDTM mapping, and Protocol-to-DQP output structure.
-- Seed data corrected so SITE-104 remains a true zero-AE underreporting signal.
-- SAE reconciliation corrected so same-subject/same-term date drift is classified as `DATE_MISMATCH` instead of unreachable/missing behavior.
-- GitHub Actions CI added for `npm ci`, `npm test`, and `npm run build` on push/PR.
-- Deployment docs updated so Vercel is the canonical production deploy and GitHub Actions is CI only.
-- Screenshots added for all five modules plus one mobile Data Review view under `docs/screenshots/`.
-- README now embeds the screenshot set near the top of the repo.
-- Mobile module header/action layout fixed so export buttons fit inside narrow viewports instead of being clipped.
-
-## Verification So Far
-
-- `npm install` completed successfully.
-- `npm run build` passed successfully.
-- `npm run build` passed again after Phase 2 reconciliation was added.
-- `npm run build` passed again after the CRF-to-SDTM Mapper was added.
-- `npm run build` passed again after the Protocol-to-DQP Generator was added.
-- `npm run build` passed again after local persistence and README work.
-- `npm run build` passed after deployment packaging and Vite chunk configuration.
-- `npm run build` passed after responsive CSS hardening.
-- `npm test` passed after adding Vitest coverage: 8 tests, 1 test file.
-- `npm run build` passed after adding named helper exports, unit tests, and reconciliation/seed-data fixes.
-- GitHub Actions workflow updated to run tests before build; local `npm test` and `npm run build` passed after the CI/docs changes.
-- Prior bundle-size warning was resolved by splitting Recharts and lucide-react into separate chunks.
-- The dev server responded with HTTP 200 at `http://127.0.0.1:5173`.
-- The live Vercel deployment responded at `https://clin-trace360.vercel.app/`.
-- Visual screenshot capture completed with Playwright Chromium at 1440x1100 and 390x900 after the mobile header/action fix.
-- Visual QA found and fixed a mobile clipping issue in the module action row; recapture confirmed no horizontal page overflow and no console errors.
-
-Useful commands:
-
-```powershell
-npm install
-npm run dev -- --port 5173
-npm run build
-npm test
+```
+src/
+├── main.jsx                 # Application entry point with ErrorBoundary
+├── ClinTrace360.jsx         # Root orchestrator and active module router
+├── styles.css               # Dark & light theme variables and layout designs
+├── components/              # Reusable presentational & operational UI elements
+│   ├── AppShell.jsx         # Core layout containing the sidebar and navigation
+│   ├── DataTable.jsx        # Data table with sorting and fuzzy search filter
+│   ├── FileUpload.jsx       # CSV Importer with drag-and-drop file support
+│   ├── ThemeToggle.jsx      # Theme switcher (Light / Dark)
+│   ├── Kpi.jsx              # Statistical KPI numeric display card
+│   ├── Badge.jsx            # Status, severity, and category labels
+│   ├── EmptyState.jsx       # Generic visual fallback for empty data
+│   ├── LoadingState.jsx     # Loading skeletons and spinners
+│   ├── ModuleHead.jsx       # Standard header block for workspace modules
+│   └── Tooltip.jsx          # Reusable tooltip overlay
+├── constants/               # Controlled lists, clinical schemas, and templates
+│   ├── crfTemplates.js      # Raw CRF templates (AE, DM, conmed, labs, vital signs)
+│   ├── sampleProtocol.js    # Pre-loaded clinical study synopsis
+│   ├── ruleLibrary.js       # Out-of-the-box data check rule definitions
+│   ├── sites.js             # Site numbers, Visit names, and Lab analyte normal ranges
+│   └── queryTemplates.js    # Pre-written query strings for discrepancies
+├── engines/                 # Core logic, parsing, and analysis engines
+│   ├── ruleEngine.js        # Evaluates synthetic trial data for quality flags
+│   ├── reconciliation.js    # Cross-compares EDC and Safety database records
+│   ├── queryEngine.js       # Manages state changes for EDC Kanban simulation
+│   ├── csvParser.js         # Parses uploaded CSV text and detects domains
+│   ├── sdtmMapper.js        # Maps CRF fields to CDISC SDTM domains
+│   ├── dqpGenerator.js      # Extracts protocol text and builds DQP documents
+│   └── dataGenerator.js     # Creates 40 synthetic subject profiles
+└── utils/                   # Clean utility functions
+    ├── csv.js               # In-browser CSV downloads
+    ├── date.js              # Timing calculations and date intervals
+    ├── storage.js           # Read/write access to browser LocalStorage
+    ├── text.js              # Term normalization and string formatting
+    └── prng.js              # Seeded pseudo-random number generator
 ```
 
-Local app URL:
+---
 
-```text
-http://127.0.0.1:5173
-```
+## Core Operational Engines
 
-Live app URL:
+ClinTrace360's interactive workflows are powered by three core engines:
 
-```text
-https://clin-trace360.vercel.app/
-```
+### 1. Rule Engine (`src/engines/ruleEngine.js`)
+The rule engine runs dynamic data quality checks against clinical domains (`DM`, `SV`, `LB`, `AE`, `EX`) to identify protocol deviations, data inconsistencies, and clinical signals.
 
-## Known Caveats
+- **Automated Validation Checks**:
+  - **Eligibility**: Identifies subjects enrolled under age 18 (e.g. `AGE < 18` in DM).
+  - **Informed Consent Timing**: Verifies that the first dose date (`RFSTDTC`) is at or after the informed consent date (`CONSENTDTC`).
+  - **Missing Visit Tracking**: Checks visits (`SV` domain) for each subject against the protocol-defined schedule (Visit 1 to Visit 7).
+  - **Visit Windows**: Detects visit date compliance breaches (where visit date `SVSTDTC` drifts by more than +/- 7 days from the expected date).
+  - **Lab Ranges**: Compares lab results (`LBORRES`) against analyte-specific reference intervals (low/high) defined in `constants/sites.js` (for ALT, AST, HGB, PLT, etc.).
+  - **Critical Signals**:
+    - **Drug-Induced Liver Injury (DILI)**: Triggers a critical finding if ALT exceeds 3x the Upper Limit of Normal (ULN).
+    - **Implausible Values**: Flags critical data entry errors, such as Hemoglobin (HGB) values below 5 g/dL.
+  - **AE Violations**: Identifies Adverse Events that start before the first dose date (`AESTDTC < RFSTDTC`) or end before they start (`AEENDTC < AESTDTC`).
+  - **Site-Level AE Underreporting**: Flags entire sites (e.g., SITE-104) that have enrolled subjects but recorded zero adverse events, highlighting potential compliance or reporting anomalies.
+  - **Dosing Consistency**: Flags placebo subjects receiving non-zero doses, or active arm subjects dosed outside of protocol specifications (e.g. active arm dose ≠ 100 mg).
+- **Outputs**:
+  - **Findings Array**: Individual objects with finding ID, subject ID, site, domain, variable, severity (Critical/Major), category, and description.
+  - **Site Summaries & Signals**: Aggregates finding counts by site and category to drive the Site Signals bar chart and the visit compliance heatmap.
 
-- Git repository is initialized and has `origin` set to `https://github.com/priyamthakar/ClinTrace360.git`.
-- `dist/` and `node_modules/` exist locally because dependencies were installed and the production build was run.
-- CRF-to-SDTM mapping is currently deterministic/rule-based, not LLM-backed.
-- Protocol-to-DQP generation is currently deterministic/rule-based, not LLM-backed.
-- ClinicalTrials.gov lookup depends on browser network access and CORS behavior.
-- Phase 2 uses deterministic synthetic external data, not real safety or laboratory systems.
-- Browser-level visual screenshot QA still needs to be completed in a browser that does not block/crash Chromium headless.
-- Vercel auto-deploys `main`; pushing to `main` should be treated as a production deploy.
-- GitHub Actions is CI-only and does not deploy the app.
+### 2. Reconciliation Engine (`src/engines/reconciliation.js`)
+The reconciliation engine runs comparisons across independent data sources (EDC clinical data vs. Safety PV Database vs. Local Labs) to identify discrepancies that could delay database lock or violate regulatory timelines.
 
-## Next Plan
+- **EDC vs. Safety PV Reconciliation**:
+  - Compares serious adverse events in EDC (`AESER = 'Y'`) against Safety database records.
+  - **Discrepancy Checks**:
+    - **Missing in EDC**: Safety SAE record is present, but no matching EDC serious AE is found.
+    - **Missing in Safety**: EDC AE is marked serious, but no Safety PV database record exists.
+    - **Verbatim Term Mismatch**: Verbatim term in EDC does not match the Safety term (e.g. "Severe Migraine" vs. "Headache"). Normalization is performed to ignore casing and white spaces.
+    - **Onset Date Mismatch**: EDC AE start date drifts from Safety database onset date by more than 1 day.
+    - **Reporting Timeline Breach**: SAE reporting date exceeds 24 hours from the onset/awareness date, violating regulatory timelines.
+- **EDC vs. Local Lab Reconciliation**:
+  - Compares local lab raw files with EDC laboratory records (`LB` domain) matching on subject, test, and date.
+  - **Discrepancy Checks**:
+    - **Missing in EDC**: Local lab result is missing from the clinical database.
+    - **Unit Mismatch**: Local lab units do not match EDC units (e.g., U/L vs. µkat/L), triggering normalization and conversion queries.
+    - **Value Mismatch**: The numeric values recorded in EDC and the local lab file differ.
+- **Outputs**:
+  - **SAE / Lab Findings logs**: Populates discrepancy data tables.
+  - **Query Templates Compilation**: Compiles detailed, regulatory-compliant query texts based on predefined templates (e.g., formatting site number, subject ID, variable names, and dates).
 
-### Phase 4: Polish and Deployment
+### 3. Query Engine (`src/engines/queryEngine.js`)
+The query engine manages the query lifecycle, simulating how clinical data managers and site coordinators resolve discrepancies.
 
-Completed additions:
+- **State Hookup**:
+  - On application startup or custom data import, the query engine aggregates all findings from the **Rule Engine** and discrepancies from the **Reconciliation Engine** into a unified query array.
+  - The unified array is stored in `localStorage` under `clintrace360_queries_v1` to persist user updates across page refreshes.
+- **Lifecycle Phases**:
+  - **OPEN**: Query is generated. Awaiting site review.
+  - **ANSWERED**: Simulated Site action. The site coordinator responds by verifying source documents, correcting entry typos, or updating safety databases. The query transitions to the "Ready to Review" column, and the site's response is appended with a timestamp.
+  - **CLOSED**: Clinical Data Manager (CDM) review action. The CDM verifies the correction against source records, inputs a closing review comment, and closes the query.
+- **Fuzzy Filtering**:
+  - Supports searching queries by ID, subject ID, description, or mismatch type.
 
-- Persistent local browser storage for DQP and mapping session history.
-- README with run instructions and module summary.
-- Deployment docs and GitHub Pages workflow.
-- Vite static build config and manual chunking.
-- Project license and `.gitignore`.
-- Synthetic data model docs.
-- Vercel deployment live URL.
-- Recruiter-facing README evaluation guide and skill-evidence mapping.
-- Source-level responsive CSS hardening for 768px and 480px breakpoints.
+---
 
-Remaining additions:
+## Interactive Feature Workflows
 
-- Screenshots from the live Vercel URL.
-- Visual responsive QA across desktop and mobile using a browser that can render the live site.
-- Broader rule-engine fixtures for every rule's clean and dirty case.
-- Optional branch protection requiring CI before merge to `main`.
-- Optional future enhancement: add LLM assistance to Protocol-to-DQP and CRF-to-SDTM workflows for ambiguous sponsor-specific content.
+The application includes several interactive workflows:
 
+### 1. Data Review & Chart Drill-downs
+The Data Review Dashboard acts as the primary operations screen, integrating visual charting with direct actions:
+- **Site Signals Tab**: 
+  - Displays a stacked bar chart of finding categories (Missing, Range, Timing, Protocol, Consistency) by site.
+  - **Interactive Action**: Clicking a bar segment filters the findings table to that specific site and category, and switches to the "Findings" tab.
+  - Clicking a site's name in the Anomaly Load list isolates that site's logs.
+  - Clicking a compliance percentage block in the Heatmap filters for that site's missing visit records.
+- **Lab Trend Tab**:
+  - Displays a Recharts scatter plot showing lab results by visit.
+  - A green reference area visualizes the normal range. Out-of-range values are marked in red.
+  - Selecting an analyte or site updates the plot instantly.
 
-## Implementation Guidance For Future Sessions
+### 2. CSV File Importer with Auto-detection
+- Located in the Data Review Dashboard, the importer allows users to upload custom trial data.
+- **Parsing**: `csvParser.js` parses comma-separated values, stripping quotation marks and converting numeric fields.
+- **Auto-Detection**: Scans the header row for key terms. If it finds `AGE`, `ARMCD`, or `BRTHDTC`, it auto-detects `dm`; if it finds `VISITNUM` or `SVSTDTC`, it detects `sv`; if it finds `LBTESTCD` or `LBORRES`, it detects `lb`.
+- **Validation**: Once imported, the Rule Engine automatically executes all validation rules against the new dataset, updating the dashboard, charts, and Query Workbench.
 
-- Treat `ClinTrace360_PROJECT_PLAN.md` as the authoritative product roadmap.
-- Treat `PROJECT_CONTEXT.md` as the quick current-state handoff.
-- Keep implementation conservative and pharma-tool-like: dense, clear, audit-friendly, and sober.
-- Do not claim production validation, real patient data handling, or real EDC integration.
-- Prefer transparent rule-based checks for review/reconciliation features.
-- Preserve the current single-file React artifact direction unless the user asks for a larger refactor.
+---
+
+## Known Caveats & Handoff Guidance
+
+- **Synthetic Data Generation**: The synthetic dataset is generated deterministically on load using a custom pseudo-random number generator (`utils/prng.js`) to guarantee consistent results across test runs and environments.
+- **ClinicalTrials.gov lookup**: Uses the public API. It is client-side, meaning it is subject to the user's internet connection and API uptime.
+- **Vitest Coverage**: The Vitest suite verifies the stability of synthetic data generation, rule-engine findings, SAE reconciliation mismatch logic, and SDTM mapping. Ensure `npm test` passes before pushing changes.
+- **Vercel Deployment**: Configured to auto-deploy changes pushed to `main`. Always preview production builds locally with `npm run preview` to verify bundle splits.

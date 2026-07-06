@@ -5,7 +5,8 @@ import { extractProtocolSignals, generateDqpPackage, formatDqpForExport } from "
 import { readStorage, saveHistoryItem } from "../utils/storage.js";
 import { Kpi } from "../components/Kpi.jsx";
 import { ModuleHead } from "../components/ModuleHead.jsx";
-import { DqpSections, EditCheckTable, UatTable, RiskChecklistTable } from "./DqpSubComponents.jsx";
+import { DqpSections, EditCheckTable, UatTable, RiskChecklistTable, DatabaseLockChecklist } from "./DqpSubComponents.jsx";
+import { CHECKLIST_TEMPLATES } from "../constants/checklistTemplates.js";
 
 export function ProtocolDqpModule() {
   const [protocolText, setProtocolText] = useState(SAMPLE_PROTOCOL_TEXT);
@@ -17,6 +18,7 @@ export function ProtocolDqpModule() {
   const [signals, setSignals] = useState(() => extractProtocolSignals(SAMPLE_PROTOCOL_TEXT));
   const [dqp, setDqp] = useState(() => generateDqpPackage(extractProtocolSignals(SAMPLE_PROTOCOL_TEXT)));
   const [history, setHistory] = useState(() => readStorage("clintrace360:dqpHistory", []));
+  const [lockChecklist, setLockChecklist] = useState(CHECKLIST_TEMPLATES);
 
   const generate = (text = protocolText, nctRecord) => {
     setIsGenerating(true);
@@ -25,6 +27,7 @@ export function ProtocolDqpModule() {
       const nextDqp = generateDqpPackage(nextSignals);
       setSignals(nextSignals);
       setDqp(nextDqp);
+      setLockChecklist(CHECKLIST_TEMPLATES.map(item => ({ ...item, checked: false })));
       setHistory(saveHistoryItem("clintrace360:dqpHistory", {
         id: `DQPH-${Date.now()}`,
         generatedAt: new Date().toLocaleString(),
@@ -208,6 +211,7 @@ export function ProtocolDqpModule() {
               <button className={`tab${activeOutput === "dqp" ? " active" : ""}`} onClick={() => setActiveOutput("dqp")}>DQP</button>
               <button className={`tab${activeOutput === "checks" ? " active" : ""}`} onClick={() => setActiveOutput("checks")}>Edit Checks</button>
               <button className={`tab${activeOutput === "uat" ? " active" : ""}`} onClick={() => setActiveOutput("uat")}>UAT</button>
+              <button className={`tab${activeOutput === "lock" ? " active" : ""}`} onClick={() => setActiveOutput("lock")}>Database Lock Checklist</button>
               <button className={`tab${activeOutput === "risk" ? " active" : ""}`} onClick={() => setActiveOutput("risk")}>Risk Review</button>
             </div>
           </div>
@@ -220,6 +224,7 @@ export function ProtocolDqpModule() {
               {activeOutput === "dqp" && <DqpSections rows={dqp.dqpSections} />}
               {activeOutput === "checks" && <EditCheckTable rows={dqp.editChecks} />}
               {activeOutput === "uat" && <UatTable rows={dqp.uatCases} />}
+              {activeOutput === "lock" && <DatabaseLockChecklist checklist={lockChecklist} setChecklist={setLockChecklist} />}
               {activeOutput === "risk" && <RiskChecklistTable rows={dqp.reviewChecklist} />}
             </>
           )}

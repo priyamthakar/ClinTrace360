@@ -2,13 +2,44 @@
 
 [![CI](https://github.com/priyamthakar/ClinTrace360/actions/workflows/ci.yml/badge.svg)](https://github.com/priyamthakar/ClinTrace360/actions/workflows/ci.yml)
 
-**Clinical Data Quality & Protocol-to-DQP Workbench**
+**Clinical Data Quality, Reconciliation, & Protocol-to-DQP Workbench**
 
-A portfolio-grade clinical data operations platform demonstrating CDM workflows, CDISC SDTM standards, SAE/lab reconciliation, and audit-ready data quality practices.
+ClinTrace360 is a portfolio-grade, browser-based clinical data operations platform designed for Clinical Data Managers (CDMs) and Clinical Data Scientists (CDSs). It simulates realistic trial data workflows, CDISC SDTM mappings, PV Safety/Lab reconciliation, and automated query management lifecycles.
 
-> All data is synthetic. No API key required. The DQP generator and CRF mapper are fully rule-based and work offline.
+> **Note**: All data is synthetically generated on the fly. No external APIs or database connections are required, and the platform functions completely offline.
 
 **[Live Demo → clin-trace360.vercel.app](https://clin-trace360.vercel.app)**
+
+---
+
+## Key Feature Spotlights
+
+### 1. Interactive Data Review Dashboard & Drill-downs
+- **Site-Level Quality Metrics**: Aggregates missing visits, range check outliers, timing infractions, protocol deviations, and dose anomalies.
+- **Interactive Recharts Visualizations**: 
+  - **Site Signals Bar Chart**: Click any colored bar segment (representing quality categories) to immediately filter the findings table to that specific site and category.
+  - **Visit Compliance Heatmap**: Click compliance percentage cells to isolate missing visit records for specific sites and scheduled visits.
+  - **Lab Trajectory Scatter Plot**: Tracks lab values (e.g., ALT, AST, HGB, PLT) across visit numbers. Normal reference ranges are highlighted; click outlier (red) data points to view detailed subject results.
+
+### 2. Query Workbench & Lifecycle Simulation (Kanban)
+- A realistic simulation of EDC query lifecycle management.
+- **Workflow Columns**: Open Queries (awaiting site action) ➔ Answered Queries (site responded, pending CDM review) ➔ Closed Queries (resolved).
+- **Simulated Actions**: Trigger realistic site responses (e.g., verifying source documents, correcting typos, updating safety databases) and close queries with auditor review comments.
+- **Fuzzy In-Line Filter & CSV Export**: Quickly filter queries by ID, subject, or discrepancy, and export the entire audit trail as a CSV file.
+
+### 3. Safety (SAE) & Local Lab Reconciliation
+- **SAE Reconciliation**: Automatically cross-references the EDC Clinical Database (AE domain) with the safety database. Flags missing SAE records, verbatim terminology discrepancies (EDC AETERM ≠ safety SAETERM), onset date drift, and regulatory 24-hour reporting breaches.
+- **Local Lab Normalization**: Compares local lab reports with EDC lab logs (`LB` domain), highlighting missing records, unit discrepancies (e.g., SI units vs. standard), and value mismatches.
+- **Resolution Panel**: Select any discrepancy row to load a detailed pane comparing EDC vs. source database entries with pre-written regulatory query text.
+
+### 4. CSV File Importer with Auto-Detection
+- Ingest external datasets by dragging and dropping or selecting a CSV.
+- **Heuristic Header Detection**: Automatically detects clinical domains (`dm`, `sv`, `lb`, `ae`, `ex`, `safety`, `localLabs`) based on standard CDISC headers (e.g., `AGE`, `VISITNUM`, `LBTESTCD`, `AETERM`, `EXDOSE`, `SAETERM`).
+- Runs all automated clinical checks and validation rules on the custom data dynamically.
+
+### 5. Protocol-to-DQP & CRF-to-SDTM Assistant
+- **Protocol-to-DQP**: Parses a clinical study synopsis or retrieves public NCT registry data from ClinicalTrials.gov. Outputs a complete **Data Quality Plan (DQP)**, UAT test cases, and edit check specs.
+- **CRF-to-SDTM Mapper**: Aligns raw Case Report Form (CRF) input with CDISC SDTM standards, mapping fields to domains, generating Controlled Terminology (CT), and assigning SDTMIG reference rules.
 
 ---
 
@@ -34,78 +65,86 @@ A portfolio-grade clinical data operations platform demonstrating CDM workflows,
 
 ---
 
-## How to Evaluate This Project
+## Recruiter & Hiring Manager Guide
 
-*For Clinical Data Scientists and CDM hiring managers — here is the fastest path through the app.*
+*This guide maps ClinTrace360 features directly to day-to-day requirements for Clinical Data Managers and Data Scientists.*
 
-### 1. Data Review Dashboard (default screen)
-- KPI cards show total subjects, missing visits, open queries, and critical findings across 40 subjects at 5 sites.
-- **Click any row** in the Findings table to expand it and see the auto-generated query text.
-- **Site Signals tab** → see SITE-103's elevated anomaly load (DILI signal) and SITE-104's AE underreporting flag.
-- **Lab Trend tab** → select ALT, filter to SITE-103 → rising values from Visit 4 onward, several >3× ULN (red dots).
-
-### 2. SAE / Lab Reconciliation
-- **Click any mismatch row** to load the detail panel: EDC value vs. safety DB value, mismatch type, severity badge, and full regulatory query text.
-- **Audit Log tab** shows timestamped query generation entries with source references.
-- Export findings as CSV.
-
-### 3. Protocol → DQP Generator
-- Pre-loaded with a Phase 2 protocol synopsis. Click **Generate DQP**.
-- Tabs: Data Quality Plan · Edit Checks · UAT Cases · Risk-Based Review Checklist.
-- Paste an NCT ID (e.g. `NCT03071809`) to load live public metadata from ClinicalTrials.gov.
-- **Copy Package** or **Export TXT** to take the output out of the app.
-
-### 4. CRF → SDTM Mapper
-- Select a template CRF (Demographics, Vital Signs, AE, Conmeds, Labs) or paste your own fields.
-- Output: SDTM domain, variable, variable label, controlled terminology, mapping notes, confidence score, and SDTMIG reference per field.
-- Session history is saved in localStorage.
+| Job Requirement | Associated ClinTrace360 Feature | Value Demonstrated |
+| :--- | :--- | :--- |
+| **eCRF Design & SDTM Mapping** | **CRF-to-SDTM Mapper** | Demonstrates deep understanding of CDISC SDTMIG standards. Shows mapping from clinical CRF fields (e.g. Demographics, ConMeds, Labs) to target SDTM variables, applying Controlled Terminology (CT), and assigning confidence levels. |
+| **Edit Check Spec & DQP Compilation** | **Protocol-to-DQP / Rule Library** | Illustrates the translation of protocol synopses into actionable Data Quality Plans (DQPs). Demonstrates writing edit check logic (e.g. range, timing, consistency checks) and mapping protocol criteria to data points. |
+| **User Acceptance Testing (UAT)** | **UAT Cases Output** | Automates the creation of step-by-step UAT scripts (with inputs, expected results, and steps) to test EDC entry validations, showing readiness for study start-up. |
+| **SAE & Lab Reconciliation** | **Reconciliation Module** | Simulates safety reconciliation against external safety databases (PV) and clinical EDC data. Aligns adverse event terms (Verbatim vs. Safety Terms), verifies reporting timelines (24-hr rules), and normalizes local lab SI conversions. |
+| **Data Review & Issue Log Tracking** | **Data Review Dashboard / Query Workbench** | Models the daily clinical data review workflow. Shows site anomaly load tracking, compliance monitoring, and handling of issue logs through a query lifecycle simulation. |
+| **Database Lock Procedures** | **Query Workbench (Kanban)** | Simulates the query cleaning pipeline required for interim locks and final database lock (DBL). Ensures zero open queries remain before DBL. |
 
 ---
 
-## What This Demonstrates
+## Seeded Data Signals & Quality Checks
 
-| Area | Evidence in the App |
-|---|---|
-| CDISC SDTM | CRF→SDTM mapper: domain, variable, CT source, SDTMIG reference, confidence |
-| SAE reconciliation | EDC vs safety DB: term mismatch, date mismatch, AESER=Y without SAE form, 24-hour reporting breach |
-| Local lab reconciliation | Value mismatch, unit mismatch, record missing in EDC |
-| Data quality rules | Rule engine across DM, SV, LB, AE, EX: missing visits, range checks, timing, protocol deviations, consistency |
-| DQP authoring | Protocol text → DQP skeleton, edit check pseudocode, UAT cases, risk checklist |
-| Risk-based monitoring | Site anomaly bar chart, visit compliance heatmap, finding distribution by site |
-| Audit trail | Timestamped query log, mismatch type, source ref, severity, open/closed status |
-| React + data viz | Recharts scatter (lab trend), stacked bar (site findings), cell heatmap (visit compliance) |
+The synthetic dataset implements realistic clinical data quality signals:
+
+| Signal / Rule | Domain | Severity | Clinical / Operational Rationale |
+| :--- | :--- | :--- | :--- |
+| **Drug-Induced Liver Injury (DILI)** | `LB` | Critical | Elevated ALT levels >3x Upper Limit of Normal (ULN) at SITE-103. |
+| **AE Underreporting** | `AE` | Critical | SITE-104 has zero Adverse Events recorded across all subjects, indicating compliance issues. |
+| **Implausible Values** | `LB` | Critical | Hemoglobin values <5 g/dL flagged as potential data entry typos. |
+| **Pre-consent Dosing** | `DM`/`EX` | Critical | Subject first dose date (`RFSTDTC`) precedes consent date (`CONSENTDTC`). |
+| **Underage Enrollment** | `DM` | Critical | Enrolled subject is under 18 years old (eligibility violation). |
+| **SAE Discrepancies** | `AE`/`Safety` | Critical/Major | Serious AEs in EDC missing in Safety PV database, term mismatches, or date discrepancies. |
+| **24-hour Reporting Breach** | `Safety` | Critical | SAE report date exceeds 1 day from onset date (regulatory violation). |
+| **Dose Inconsistency** | `EX` | Major/Critical | Placebo subject with non-zero dose, or Drug A subject dosed outside 100mg protocol. |
 
 ---
 
-## Seeded Data Signals
+## Project Architecture
 
-The synthetic dataset surfaces realistic clinical data quality issues:
+ClinTrace360 utilizes a modular layout separating state, UI components, domain rules, and helper utilities.
 
-| Signal | Site | Domain | Detail |
-|---|---|---|---|
-| Drug-induced liver injury | SITE-103 | LB | Rising ALT from Visit 4 onward; several values >3× ULN |
-| AE underreporting | SITE-104 | AE | Zero AE records across all 8 subjects — triggers site-level finding |
-| Implausible lab values | SITE-105 | LB | Hemoglobin <5 g/dL — flagged as likely data-entry error |
-| Pre-consent dosing | SITE-101 | DM | Subject 001: RFSTDTC before CONSENTDTC |
-| Underage enrolment | SITE-101 | DM | Age 17 subject enrolled — protocol eligibility violation |
-| SAE term mismatch | Various | AE/Safety | EDC AETERM ≠ safety DB SAETERM for same event |
-| 24-hour breach | Various | Safety | SAE report date >1 day after onset — regulatory timeline flag |
-| Local lab discrepancy | Various | LB | Unit mismatch (U/L vs ukat/L), value off, or record missing in EDC |
-| Dose inconsistency | SITE-103/104 | EX | Placebo subjects with non-zero EXDOSE; Drug A subjects dosed at wrong amount |
+```
+src/
+├── main.jsx                 # Entry point with ErrorBoundary wrapper
+├── ClinTrace360.jsx         # Orchestrator matching active modules & state
+├── styles.css               # Core CSS layout with Light/Dark variables
+├── components/              # Reusable UI elements
+│   ├── AppShell.jsx         # Sidebar and header navigation wrapper
+│   ├── DataTable.jsx        # Data table with sorting & fuzzy filtering
+│   ├── FileUpload.jsx       # CSV Importer supporting drag-and-drop
+│   ├── ThemeToggle.jsx      # Theme switcher (Light / Dark)
+│   ├── Kpi.jsx              # Statistical KPI numeric display card
+│   └── Badge.jsx            # Multi-colored status and severity badges
+├── constants/               # Controlled lists, schemas, and templates
+│   ├── crfTemplates.js      # Raw CRF templates (AE, DM, conmed, etc.)
+│   ├── sampleProtocol.js    # Pre-loaded clinical trials synopsis
+│   ├── ruleLibrary.js       # Data check rule definitions
+│   └── sites.js             # Site and Visit structures
+├── engines/                 # Logical parsing, verification, and mapping engines
+│   ├── ruleEngine.js        # Evaluates synthetic trial data for quality flags
+│   ├── reconciliation.js    # Cross-compares EDC and Safety database records
+│   ├── queryEngine.js       # Manages state changes for EDC Kanban simulation
+│   ├── csvParser.js         # Parses uploaded CSV text and detects domains
+│   ├── sdtmMapper.js        # Maps CRF fields to CDISC SDTM domains
+│   ├── dqpGenerator.js      # Extract protocol text and builds DQP documents
+│   └── dataGenerator.js     # Creates 40 synthetic subject profiles
+└── utils/                   # Clean helper methods
+    ├── csv.js               # In-browser CSV downloads
+    ├── date.js              # Timing calculations and date intervals
+    ├── storage.js           # Read/write access to browser LocalStorage
+    └── text.js              # Term normalization and string formatting
+```
 
 ---
 
 ## Stack
 
-| Layer | Technology |
-|---|---|
-| Build | Vite 7 |
-| UI | React 19, plain CSS custom properties |
-| Charts | Recharts 3.5 |
-| Icons | Lucide-react 0.556 |
-| Typography | DM Sans + DM Mono (Google Fonts) |
-| Storage | Browser `localStorage` for session history |
-| Backend | None — fully client-side |
+- **Build**: Vite 7
+- **UI**: React 19, vanilla CSS Custom Properties
+- **Charts**: Recharts 3.5 (Scatter, Heatmap, Stacked Bar Charts)
+- **Icons**: Lucide-react 0.556
+- **Typography**: DM Sans + DM Mono (for code, IDs, dates, and query details)
+- **Storage**: In-browser `localStorage` for active session persistence
+- **Theme**: Light and Dark theme options (controlled via `data-theme` attribute)
+- **CI/CD**: GitHub Actions (install, test, build verification)
 
 ---
 
@@ -118,38 +157,14 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:5173**
+Open **http://localhost:5173** to view the app.
 
 ```bash
-npm run build    # production build → dist/
-npm test         # deterministic unit tests
-npm run preview  # serve the production build locally
+npm run build    # production build -> dist/
+npm test         # run Vitest unit test suite
+npm run preview  # preview production build locally
 ```
 
 ---
 
-## Project Structure
-
-```
-src/
-  ClinTrace360.jsx   # data generation, rule engine, all 4 modules (~1660 lines)
-  styles.css         # dark design system, CSS custom properties (~1060 lines)
-  main.jsx           # React entry point with ErrorBoundary
-index.html           # Google Fonts preconnect (DM Sans, DM Mono)
-vite.config.js       # chunk splitting: recharts → charts, lucide-react → icons
-```
-
----
-
-## Design
-
-Dark enterprise UI — Linear × Sentry hybrid. Built for clinical data managers and data scientists, not a marketing audience.
-
-- Background `#0E0F11`, primary accent `#5E6AD2`
-- No gradients — depth through borders and spacing only
-- `DM Sans` for UI, `DM Mono` for subject IDs, dates, SDTM codes, query text
-- Responsive: sidebar collapses at ≤768px, replaced by a sticky horizontal module tab bar
-
----
-
-*Synthetic data only. No real patient data. No PHI. Not validated for production clinical use.*
+*For portfolio demonstration purposes only. Synthetic datasets contain no PHI or real patient records. Not validated for production clinical trial execution.*
