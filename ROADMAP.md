@@ -33,18 +33,18 @@ The roadmap is organized into **milestones M0–M9**, ordered by dependency and 
 
 **Goal:** README and repo carry real visuals; a recruiter sees the app without running it.
 
-- ☐ Capture screenshots of all 5 modules from the **live Vercel site** (headless Chromium crashes locally — do not retry headless here; use the real browser or ask the user).
+- ✅ Capture screenshots of all 5 modules. Live Vercel was verified to render; final committed assets were captured from the fixed local Vite build so the mobile CSS correction is represented.
   - Data Review Dashboard (show the injected anomalies: SITE-103 ALT signal, SITE-104 zero-AE, SITE-105 implausible HGB).
   - SAE/Lab Reconciliation (a populated query log).
   - Protocol→DQP (a generated DQP package).
   - CRF→SDTM Mapper (a mapping table with confidence column).
   - Rule Library.
-- ☐ Capture at least one **mobile-width** screenshot to prove responsive work.
-- ☐ Save to `docs/screenshots/` (directory exists, currently empty).
-- ☐ Embed in `README.md` under a "Screenshots" section.
+- ✅ Capture at least one **mobile-width** screenshot to prove responsive work.
+- ✅ Save to `docs/screenshots/`.
+- ✅ Embed in `README.md` under a "Screenshots" section.
 - ☐ Optional: a short GIF/screen recording of clicking through modules.
 
-**Exit criteria:** `docs/screenshots/` populated; README renders images on GitHub.
+**Exit criteria:** MET for static screenshots — `docs/screenshots/` populated; README renders images on GitHub after push.
 
 ---
 
@@ -52,12 +52,12 @@ The roadmap is organized into **milestones M0–M9**, ordered by dependency and 
 
 **Goal:** Confirm the app actually looks right, not just that it builds.
 
-- ☐ Eyeball desktop (≥1280px), tablet (768px), mobile (480px and ~375px) on the live site.
-- ☐ Verify: tab rows scroll horizontally; card-head actions wrap; mobile nav works; tables scroll; no horizontal page overflow.
+- ◐ Eyeball desktop (≥1280px) and mobile (~390px) via Playwright screenshots. Tablet/manual browser pass still pending.
+- ◐ Verify: tab rows scroll horizontally; card-head actions wrap; mobile nav works; tables scroll; no horizontal page overflow. Mobile module action clipping was found and fixed in `src/styles.css`.
 - ☐ Check charts (Recharts) resize cleanly at small widths.
 - ☐ Verify dark theme contrast is legible (accent `#5E6AD2` on `#0E0F11`).
 - ☐ Cross-browser smoke test: Chrome, Edge, Firefox, mobile Safari if possible.
-- ☐ Log any defects as issues; fix layout regressions in `src/styles.css`.
+- ✅ Log any defects as issues; fix layout regressions in `src/styles.css`.
 
 **Exit criteria:** No layout breakage at any tested width; documented QA pass.
 

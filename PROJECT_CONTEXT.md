@@ -134,7 +134,7 @@ Implemented so far:
 - Local browser history implemented for CRF-to-SDTM mapping sessions.
 - README created with setup instructions, module summary, methodology, and limitations.
 - Vite config added for static deployment and cleaner vendor chunking.
-- GitHub Pages workflow added.
+- GitHub Actions CI workflow added.
 - MIT license added.
 - `.gitignore` added.
 - Data model and deployment docs added.
@@ -150,6 +150,9 @@ Implemented so far:
 - SAE reconciliation corrected so same-subject/same-term date drift is classified as `DATE_MISMATCH` instead of unreachable/missing behavior.
 - GitHub Actions CI added for `npm ci`, `npm test`, and `npm run build` on push/PR.
 - Deployment docs updated so Vercel is the canonical production deploy and GitHub Actions is CI only.
+- Screenshots added for all five modules plus one mobile Data Review view under `docs/screenshots/`.
+- README now embeds the screenshot set near the top of the repo.
+- Mobile module header/action layout fixed so export buttons fit inside narrow viewports instead of being clipped.
 
 ## Verification So Far
 
@@ -167,7 +170,8 @@ Implemented so far:
 - Prior bundle-size warning was resolved by splitting Recharts and lucide-react into separate chunks.
 - The dev server responded with HTTP 200 at `http://127.0.0.1:5173`.
 - The live Vercel deployment responded at `https://clin-trace360.vercel.app/`.
-- Headless Chrome/Edge screenshot capture failed locally because Chromium GPU initialization crashed/hung in this environment; visual screenshot capture is still pending from a normal browser or Vercel preview context.
+- Visual screenshot capture completed with Playwright Chromium at 1440x1100 and 390x900 after the mobile header/action fix.
+- Visual QA found and fixed a mobile clipping issue in the module action row; recapture confirmed no horizontal page overflow and no console errors.
 
 Useful commands:
 

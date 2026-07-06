@@ -12,6 +12,28 @@ A portfolio-grade clinical data operations platform demonstrating CDM workflows,
 
 ---
 
+## Screenshots
+
+### Data Review Dashboard
+![Data Review Dashboard](docs/screenshots/01-data-review-dashboard.png)
+
+### SAE / Lab Reconciliation
+![SAE / Lab Reconciliation](docs/screenshots/02-sae-lab-reconciliation.png)
+
+### Protocol → DQP Generator
+![Protocol to DQP Generator](docs/screenshots/03-protocol-dqp.png)
+
+### CRF → SDTM Mapper
+![CRF to SDTM Mapper](docs/screenshots/04-crf-sdtm-mapper.png)
+
+### Rule Library
+![Rule Library](docs/screenshots/05-rule-library.png)
+
+### Mobile Layout
+![Mobile Data Review Layout](docs/screenshots/06-mobile-data-review.png)
+
+---
+
 ## How to Evaluate This Project
 
 *For Clinical Data Scientists and CDM hiring managers — here is the fastest path through the app.*
